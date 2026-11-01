@@ -7,6 +7,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -23,6 +25,7 @@ import org.json.JSONObject
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContent { MaterialTheme { SduiApp() } }
     }
 }
@@ -36,24 +39,49 @@ private sealed interface UiState {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SduiApp() {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val stack = remember { mutableStateListOf("home") }
+    val context = LocalContext.current
+    val stack = remember { mutableStateListOf("homepage") }
     var reloadKey by remember { mutableIntStateOf(0) }
     var state by remember { mutableStateOf<UiState>(UiState.Loading) }
     val current = stack.last()
 
     LaunchedEffect(current, reloadKey) {
-        state = UiState.Loading
-        state = try {
-            val json = withContext(Dispatchers.IO) { ServerConfig.fetchScreen(current) }
-            UiState.Ready(json)
+        val cached = ServerConfig.loadCached(context, current)
+        state = if (cached != null) UiState.Ready(cached) else UiState.Loading
+        try {
+            val json = withContext(Dispatchers.IO) {
+                val bust = reloadKey > 0
+                val j = ServerConfig.fetchScreen(current, bust)
+                // Naya schema (layout key) ho to "<screen>.mock.json" bhi merge karo
+                if (j.has("layout")) {
+                    val extra = runCatching { ServerConfig.fetchScreen("$current.mock", bust) }.getOrNull()
+                    if (extra != null) {
+                        val ks = extra.keys()
+                        while (ks.hasNext()) {
+                            val k = ks.next()
+                            j.put(k, extra.opt(k))
+                        }
+                    }
+                }
+                j
+            }
+            ServerConfig.saveCache(context, current, json)
+            state = UiState.Ready(json)
         } catch (e: Exception) {
-            UiState.Error(e.message ?: "Unknown error")
+            if (cached == null) state = UiState.Error(e.message ?: "Unknown error")
         }
     }
 
     BackHandler(enabled = stack.size > 1) { stack.removeAt(stack.lastIndex) }
 
+    // ---- Naya engine (layout/templates schema) ----
+    val ready = state as? UiState.Ready
+    if (ready != null && ready.screen.has("layout")) {
+        SduiScreen(root = ready.screen, onReload = { reloadKey++ })
+        return
+    }
+
+    // ---- Purana simple schema (components list) ----
     val onAction: (JSONObject) -> Unit = { action ->
         when (action.optString("type")) {
             "toast" -> Toast.makeText(context, action.optString("message"), Toast.LENGTH_SHORT).show()
@@ -65,7 +93,7 @@ fun SduiApp() {
         }
     }
 
-    val screen = (state as? UiState.Ready)?.screen
+    val screen = ready?.screen
     val title = screen?.optString("title").takeUnless { it.isNullOrBlank() } ?: current
 
     Scaffold(

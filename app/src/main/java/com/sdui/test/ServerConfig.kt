@@ -1,26 +1,26 @@
 package com.sdui.test
 
+import android.content.Context
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 
 object ServerConfig {
-    // TODO: apna GitHub username aur repo name yahan daalo.
-    // Reppo me "server/" folder ke andar home.json, profile.json hone chahiye.
-    private const val GITHUB_USER = "YOUR_GITHUB_USERNAME"
-    private const val GITHUB_REPO = "YOUR_REPO_NAME"
+    private const val GITHUB_USER = "mymedicineofficial"
+    private const val GITHUB_REPO = "sdui"
     private const val BRANCH = "main"
 
     private const val BASE =
         "https://raw.githubusercontent.com/$GITHUB_USER/$GITHUB_REPO/$BRANCH/server"
 
-    /** screen = "home" -> server/home.json */
-    fun fetchScreen(screen: String): JSONObject {
-        // ?t= GitHub raw cache ko bypass karne ke liye
-        val url = URL("$BASE/$screen.json?t=${System.currentTimeMillis()}")
+    /** screen = "home" -> server/home.json
+     *  bust = true sirf manual Refresh par, warna CDN cache se tez aata hai */
+    fun fetchScreen(screen: String, bust: Boolean = false): JSONObject {
+        val suffix = if (bust) "?t=${System.currentTimeMillis()}" else ""
+        val url = URL("$BASE/$screen.json$suffix")
         val conn = url.openConnection() as HttpURLConnection
-        conn.connectTimeout = 8000
-        conn.readTimeout = 8000
+        conn.connectTimeout = 5000
+        conn.readTimeout = 5000
         try {
             if (conn.responseCode != 200) {
                 throw IllegalStateException("HTTP ${conn.responseCode} for $screen.json")
@@ -30,5 +30,18 @@ object ServerConfig {
         } finally {
             conn.disconnect()
         }
+    }
+
+    fun loadCached(context: Context, screen: String): JSONObject? {
+        val text = context.getSharedPreferences("sdui_cache", Context.MODE_PRIVATE)
+            .getString(screen, null) ?: return null
+        return runCatching { JSONObject(text) }.getOrNull()
+    }
+
+    fun saveCache(context: Context, screen: String, json: JSONObject) {
+        context.getSharedPreferences("sdui_cache", Context.MODE_PRIVATE)
+            .edit()
+            .putString(screen, json.toString())
+            .apply()
     }
 }
