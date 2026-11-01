@@ -7,7 +7,7 @@
       "type": "column", "fillWidth": true, "bg": "#6C2BD9", "radius": 28, "padding": 22, "spacing": 6,
       "children": [
         { "type": "text", "text": "💊 MY MEDICINE", "size": 13, "bold": true, "color": "#E9D5FF" },
-        { "type": "text", "text": "Tumhari health,\nHamari zimmedari ✨", "size": 30, "bold": true, "color": "#FFFFFF" },
+        { "type": "text", "text": "umhari health,\nHamari zimmedari ✨", "size": 30, "bold": true, "color": "#FFFFFF" },
         { "type": "text", "text": "Ye poori screen server se aa rahi hai ⚡ APK update = zero", "size": 14, "color": "#DDD6FE" },
         { "type": "spacer", "height": 8 },
         {
