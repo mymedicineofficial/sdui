@@ -3,7 +3,7 @@
   "title": "Home",
   "background": "#FFFFFF",
   "components": [
-    { "type": "text", "text": "Welcome to majerdar", "size": 24, "bold": true },
+    { "type": "text", "text": "Welcome to heloooooooooo", "size": 24, "bold": true },
     { "type": "text", "text": "Ye poori screen GitHub ke JSON se bani hai.", "color": "#666666" },
     { "type": "image", "url": "https://picsum.photos/800/400", "height": 160, "radius": 16 },
     {
