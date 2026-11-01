@@ -1,29 +1,115 @@
 {
-  "version": 1,
-  "title": "Home",
-  "background": "#FFFFFF",
+  "version": 2,
+  "title": "My Medicine ⚡",
+  "background": "#0B1020",
   "components": [
-    { "type": "text", "text": "Welcome to heloooooooooo", "size": 24, "bold": true },
-    { "type": "text", "text": "Ye poori screen GitHub ke JSON se bani hai.", "color": "#666666" },
-    { "type": "image", "url": "https://picsum.photos/800/400", "height": 160, "radius": 16 },
     {
-      "type": "card",
-      "bg": "#E8F0FE",
-      "spacing": 6,
+      "type": "column", "fillWidth": true, "bg": "#6C2BD9", "radius": 28, "padding": 22, "spacing": 6,
       "children": [
-        { "type": "text", "text": "Card Title", "size": 18, "bold": true },
-        { "type": "text", "text": "JSON me text badlo, commit karo, Refresh dabao." }
+        { "type": "text", "text": "💊 MY MEDICINE", "size": 13, "bold": true, "color": "#E9D5FF" },
+        { "type": "text", "text": "Tumhari health,\nHamari zimmedari ✨", "size": 30, "bold": true, "color": "#FFFFFF" },
+        { "type": "text", "text": "Ye poori screen server se aa rahi hai ⚡ APK update = zero", "size": 14, "color": "#DDD6FE" },
+        { "type": "spacer", "height": 8 },
+        {
+          "type": "row", "spacing": 10,
+          "children": [
+            { "type": "button", "text": "Start Now 🚀", "bg": "#22C55E", "action": { "type": "toast", "message": "Let's go! 🚀" } },
+            { "type": "button", "text": "Profile 👤", "bg": "#F59E0B", "action": { "type": "open_screen", "screen": "profile" } }
+          ]
+        }
+      ]
+    },
+
+    { "type": "image", "url": "https://picsum.photos/seed/medicine/900/450", "height": 190, "radius": 28 },
+
+    { "type": "text", "text": "⚡ Quick Actions", "size": 20, "bold": true, "color": "#FFFFFF" },
+    {
+      "type": "row", "spacing": 10,
+      "children": [
+        { "type": "column", "bg": "#F97316", "radius": 20, "padding": 16, "spacing": 4,
+          "action": { "type": "toast", "message": "Reminders ⏰" },
+          "children": [
+            { "type": "text", "text": "⏰", "size": 30, "color": "#FFFFFF" },
+            { "type": "text", "text": "Reminders", "size": 13, "bold": true, "color": "#FFFFFF" }
+          ] },
+        { "type": "column", "bg": "#06B6D4", "radius": 20, "padding": 16, "spacing": 4,
+          "action": { "type": "toast", "message": "Doctors 🩺" },
+          "children": [
+            { "type": "text", "text": "🩺", "size": 30, "color": "#FFFFFF" },
+            { "type": "text", "text": "Doctors", "size": 13, "bold": true, "color": "#FFFFFF" }
+          ] },
+        { "type": "column", "bg": "#EC4899", "radius": 20, "padding": 16, "spacing": 4,
+          "action": { "type": "toast", "message": "Orders 📦" },
+          "children": [
+            { "type": "text", "text": "📦", "size": 30, "color": "#FFFFFF" },
+            { "type": "text", "text": "Orders", "size": 13, "bold": true, "color": "#FFFFFF" }
+          ] }
+      ]
+    },
+
+    {
+      "type": "card", "bg": "#111C34", "radius": 24, "padding": 20, "spacing": 2,
+      "children": [
+        { "type": "text", "text": "📊 Aaj ka Health Score", "size": 14, "color": "#94A3B8" },
+        { "type": "text", "text": "92%", "size": 52, "bold": true, "color": "#22C55E" },
+        { "type": "text", "text": "Medicines on time ✅ Keep it up champ! 🏆", "size": 14, "color": "#CBD5E1" }
+      ]
+    },
+
+    { "type": "text", "text": "🗓️ Aaj ka Schedule", "size": 20, "bold": true, "color": "#FFFFFF" },
+    {
+      "type": "row", "fillWidth": true, "bg": "#1E293B", "radius": 18, "padding": 14, "spacing": 14,
+      "action": { "type": "toast", "message": "Marked as taken ✅" },
+      "children": [
+        { "type": "text", "text": "💊", "size": 30, "color": "#FFFFFF" },
+        { "type": "column", "children": [
+          { "type": "text", "text": "Paracetamol 500mg", "size": 16, "bold": true, "color": "#FFFFFF" },
+          { "type": "text", "text": "8:00 AM · Khane ke baad", "size": 13, "color": "#94A3B8" }
+        ] }
       ]
     },
     {
-      "type": "row",
-      "spacing": 8,
+      "type": "row", "fillWidth": true, "bg": "#1E293B", "radius": 18, "padding": 14, "spacing": 14,
+      "action": { "type": "toast", "message": "Marked as taken ✅" },
       "children": [
-        { "type": "button", "text": "Toast", "action": { "type": "toast", "message": "Hello from server!" } },
-        { "type": "button", "text": "Profile", "bg": "#2E7D32", "action": { "type": "open_screen", "screen": "profile" } }
+        { "type": "text", "text": "🧴", "size": 30, "color": "#FFFFFF" },
+        { "type": "column", "children": [
+          { "type": "text", "text": "Vitamin D3", "size": 16, "bold": true, "color": "#FFFFFF" },
+          { "type": "text", "text": "2:00 PM · Lunch ke saath", "size": 13, "color": "#94A3B8" }
+        ] }
       ]
     },
-    { "type": "button", "text": "Open Website", "fillWidth": true, "bg": "#C2185B",
-      "action": { "type": "open_url", "url": "https://github.com" } }
+    {
+      "type": "row", "fillWidth": true, "bg": "#1E293B", "radius": 18, "padding": 14, "spacing": 14,
+      "action": { "type": "toast", "message": "Marked as taken ✅" },
+      "children": [
+        { "type": "text", "text": "🌙", "size": 30, "color": "#FFFFFF" },
+        { "type": "column", "children": [
+          { "type": "text", "text": "Omega 3", "size": 16, "bold": true, "color": "#FFFFFF" },
+          { "type": "text", "text": "9:30 PM · Sone se pehle", "size": 13, "color": "#94A3B8" }
+        ] }
+      ]
+    },
+
+    {
+      "type": "column", "fillWidth": true, "bg": "#EF4444", "radius": 24, "padding": 20, "spacing": 6,
+      "children": [
+        { "type": "text", "text": "🔥 FLAT 30% OFF", "size": 26, "bold": true, "color": "#FFFFFF" },
+        { "type": "text", "text": "Pehle order par. Code: SERVER30", "size": 14, "color": "#FEE2E2" },
+        { "type": "button", "text": "Claim Offer 🎁", "bg": "#111827",
+          "action": { "type": "open_url", "url": "https://github.com/mymedicineofficial/sdui" } }
+      ]
+    },
+
+    { "type": "image", "url": "https://picsum.photos/seed/healthy/900/400", "height": 150, "radius": 24 },
+    {
+      "type": "card", "bg": "#064E3B", "radius": 20, "padding": 16, "spacing": 4,
+      "children": [
+        { "type": "text", "text": "💡 Health Tip", "size": 16, "bold": true, "color": "#6EE7B7" },
+        { "type": "text", "text": "Roz 8 glass paani piyo aur dawai time par lo. Chhoti aadat, bada fayda 💧", "size": 14, "color": "#D1FAE5" }
+      ]
+    },
+
+    { "type": "text", "text": "Made with JSON ❤️ edit home.json → refresh → boom 💥", "size": 12, "color": "#64748B", "align": "center", "fillWidth": true }
   ]
 }
