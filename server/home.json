@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "title": "Home",
+  "background": "#FFFFFF",
+  "components": [
+    { "type": "text", "text": "Welcome to Server Driven UI", "size": 24, "bold": true },
+    { "type": "text", "text": "Ye poori screen GitHub ke JSON se bani hai.", "color": "#666666" },
+    { "type": "image", "url": "https://picsum.photos/800/400", "height": 160, "radius": 16 },
+    {
+      "type": "card",
+      "bg": "#E8F0FE",
+      "spacing": 6,
+      "children": [
+        { "type": "text", "text": "Card Title", "size": 18, "bold": true },
+        { "type": "text", "text": "JSON me text badlo, commit karo, Refresh dabao." }
+      ]
+    },
+    {
+      "type": "row",
+      "spacing": 8,
+      "children": [
+        { "type": "button", "text": "Toast", "action": { "type": "toast", "message": "Hello from server!" } },
+        { "type": "button", "text": "Profile", "bg": "#2E7D32", "action": { "type": "open_screen", "screen": "profile" } }
+      ]
+    },
+    { "type": "button", "text": "Open Website", "fillWidth": true, "bg": "#C2185B",
+      "action": { "type": "open_url", "url": "https://github.com" } }
+  ]
+}

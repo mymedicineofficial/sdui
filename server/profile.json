@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "title": "Profile",
+  "background": "#FFF8E1",
+  "components": [
+    { "type": "text", "text": "Profile Screen", "size": 22, "bold": true, "align": "center", "fillWidth": true },
+    { "type": "card", "bg": "#FFFFFF", "children": [
+      { "type": "text", "text": "Name: Test User" },
+      { "type": "text", "text": "Ye doosri screen open_screen action se khuli." }
+    ]},
+    { "type": "button", "text": "Back", "action": { "type": "back" } }
+  ]
+}
