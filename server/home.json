@@ -1,115 +1,1155 @@
 {
-  "version": 2,
-  "title": "My Medicine ⚡",
-  "background": "#0B1020",
-  "components": [
-    {
-      "type": "column", "fillWidth": true, "bg": "#6C2BD9", "radius": 28, "padding": 22, "spacing": 6,
-      "children": [
-        { "type": "text", "text": "💊 MY MEDICINE", "size": 13, "bold": true, "color": "#E9D5FF" },
-        { "type": "text", "text": "umhari health,\nHamari zimmedari ✨", "size": 30, "bold": true, "color": "#FFFFFF" },
-        { "type": "text", "text": "Ye poori screen server se aa rahi hai ⚡ APK update = zero", "size": 14, "color": "#DDD6FE" },
-        { "type": "spacer", "height": 8 },
+  "schemaVersion": 1,
+  "screen": "homepage",
+  "package": "com.myrunner.mymedecine",
+  "description": "SDUI definition of the Home screen. Client renders `layout`, binds `dataSources` via {{path}} expressions, runs `actions` on events.",
+
+  "window": {
+    "edgeToEdge": true,
+    "statusBarColor": "transparent",
+    "navigationBarColor": "transparent"
+  },
+
+  "theme": {
+    "tokens": {
+      "bg": "@theme/colorBg",
+      "surface": "@theme/colorSurface",
+      "surfaceLight": "@theme/colorSurfaceLight",
+      "iconBg": "@theme/colorIconBg",
+      "border": "@theme/colorBorder",
+      "primary": "@theme/colorPrimary",
+      "textPrimary": "@theme/colorTextPrimary",
+      "textSecondary": "@theme/colorTextSecondary",
+      "richRed": "@theme/colorRichRed",
+      "green": "@theme/colorGreen",
+      "yellow": "@theme/colorYellow",
+      "scrim": "#CC000000",
+      "purple": "#A78BFA",
+      "sky": "#38BDF8",
+      "sosStart": "#991B1B",
+      "sosEnd": "#450A0A",
+      "sosSubtitle": "#FECACA"
+    },
+    "celebrationOverlay": { "light": "#F2FFFFFF", "dark": "#F20B0F1A" }
+  },
+
+  "strings": {
+    "app_name": "@text/app_name",
+    "offline": "@text/offline",
+    "online": "@text/online",
+    "welcome": "@text/welcome",
+    "search_hint": "@text/search_hint",
+    "find_doctor": "@text/find_doctor",
+    "health_hub": "@text/health_hub",
+    "upcoming_appointments": "@text/upcoming_appointments",
+    "upcoming_medicine": "@text/upcoming_medicine",
+    "special_offers": "@text/special_offers",
+    "popular_specialties": "@text/popular_specialties",
+    "daily_health_tip": "@text/daily_health_tip",
+    "footer_text": "@text/footer_text",
+    "view_all": "@text/view_all",
+    "seat": "@text/seat",
+    "call_now": "@text/call_now",
+    "emergency": "@text/emergency",
+    "emergency_desc": "@text/emergency_desc",
+    "no_appointments": "@text/no_appointments",
+    "track_meds": "@text/track_meds",
+    "stay_hydrated": "@text/stay_hydrated",
+    "water_tip": "@text/water_tip",
+    "congratulations": "@text/congratulations",
+    "appointment_approved_msg": "@text/appointment_approved_msg"
+  },
+
+  "state": {
+    "isOffline": false,
+    "notificationBadgeVisible": true,
+    "isRefreshing": false,
+    "appLockPassed": false
+  },
+
+  "dataSources": {
+    "currentUser": {
+      "type": "firebaseAuth",
+      "fields": { "uid": "currentUser.uid" }
+    },
+
+    "user": {
+      "type": "firestoreDocument",
+      "realtime": true,
+      "path": "Users/{{currentUser.uid}}",
+      "startOn": "dataServicesReady",
+      "computed": {
+        "displayName": { "expr": "coalesce(doc.name, 'User')" },
+        "locationText": {
+          "transform": "addressDecode",
+          "input": "doc.address",
+          "emptyValue": "Add delivery address",
+          "rules": [
+            "split by ',' then trim and drop empty parts",
+            "if parts.length >= 2: drop parts containing digits -> filtered",
+            "if filtered.length >= 2 show last 2 of filtered joined by ', ' else last 2 of parts joined by ', '",
+            "if parts.length < 2 show raw address"
+          ]
+        },
+        "isCommunityProfileUpdated": { "expr": "coalesce(doc.isCommunityProfileUpdated, false)" },
+        "profilePic": { "expr": "doc.profilePic" }
+      }
+    },
+
+    "latestArticle": {
+      "type": "firestoreQuery",
+      "realtime": true,
+      "collection": "Articles",
+      "orderBy": [{ "field": "timestamp", "direction": "desc" }],
+      "limit": 1,
+      "startOn": "dataServicesReady",
+      "map": {
+        "id": "doc.id",
+        "title": "coalesce(doc.title, 'Health Update')",
+        "imageUrl": "coalesce(doc.imageUrl, '')",
+        "date": "coalesce(doc.date, '')",
+        "views": "coalesce(doc.views, 0)"
+      }
+    },
+
+    "appointments": {
+      "type": "firestoreQuery",
+      "realtime": true,
+      "collection": "appointmentstatus/{{currentUser.uid}}/bookings",
+      "where": [{ "field": "status", "op": "!=", "value": "Completed" }],
+      "startOn": "dataServicesReady",
+      "clientPipeline": [
+        { "op": "sortBy", "field": "timestamp", "direction": "desc", "default": 0 },
+        { "op": "filter", "expr": "lower(status) != 'incomplete'" },
+        { "op": "filter", "expr": "!(lower(status) == 'rejected' && (now() - timestamp) > 86400000)" },
+        { "op": "take", "count": 3 }
+      ],
+      "map": {
+        "id": "doc.id",
+        "status": "coalesce(doc.status, 'Pending')",
+        "doctorName": "coalesce(doc.doctorName, 'Doctor')",
+        "specialty": "coalesce(doc.specialty, 'Specialist')",
+        "schedule": "coalesce(doc.date, 'Date') + ' | ' + coalesce(doc.time, 'Time')",
+        "seat": "coalesce(doc.seatNumber, 'Pending')",
+        "doctorPic": "coalesce(doc.doctorPic, '')",
+        "reason": "coalesce(doc.rejectionReason, '')",
+        "isApproved": "status == 'Approved' || status == 'Confirmed'"
+      }
+    },
+
+    "notificationCount": {
+      "type": "firestoreQuery",
+      "realtime": true,
+      "collection": "userhelp/{{currentUser.uid}}/messages",
+      "startOn": "dataServicesReady",
+      "aggregate": { "op": "count", "where": "doc.senderId != currentUser.uid" },
+      "computed": {
+        "label": "count > 9 ? '9+' : toString(count)",
+        "visible": "count > 0"
+      }
+    },
+
+    "banners": {
+      "type": "remoteList",
+      "note": "Replace with the real source used by the `banners` class (fetchBanners).",
+      "collection": "Banners",
+      "startOn": "dataServicesReady",
+      "autoScroll": true
+    },
+
+    "specialties": {
+      "type": "static",
+      "items": [
+        { "name": "Gastric", "image": "@drawable/newbimari", "type": "Gastric" },
+        { "name": "Ortho", "image": "@drawable/bimari2", "type": "Orthopedics" },
+        { "name": "Dentist", "image": "@drawable/teeth", "type": "Dentist" },
+        { "name": "Heart", "image": "@drawable/heart", "type": "Heart" },
+        { "name": "Eyes", "image": "@drawable/eye", "type": "Eyes" },
+        { "name": "Skin", "image": "@drawable/skins3", "type": "Skin" },
+        { "name": "Lungs", "image": "@drawable/lungs", "type": "Lungs" }
+      ]
+    },
+
+    "network": {
+      "type": "connectivity",
+      "capability": "internet",
+      "startOn": "dataServicesReady"
+    }
+  },
+
+  "lifecycle": {
+    "onCreate": [
+      { "do": "applyTheme" },
+      { "do": "initTextEngine" },
+      {
+        "do": "requestPermission",
+        "permission": "POST_NOTIFICATIONS",
+        "minSdk": 33,
+        "requestCode": 101
+      },
+      { "do": "renderLayout" },
+      {
+        "if": "intent.extra.show_approval_celebration == true",
+        "then": [{ "do": "delay", "ms": 600 }, { "do": "showOverlay", "overlay": "approvalCelebration" }]
+      },
+      { "do": "checkAppLock" }
+    ],
+
+    "checkAppLock": {
+      "if": "prefs('security_prefs').app_lock_enabled == true",
+      "then": [
+        { "do": "showOverlay", "overlay": "lockOverlay" },
         {
-          "type": "row", "spacing": 10,
-          "children": [
-            { "type": "button", "text": "Start Now 🚀", "bg": "#22C55E", "action": { "type": "toast", "message": "Let's go! 🚀" } },
-            { "type": "button", "text": "Profile 👤", "bg": "#F59E0B", "action": { "type": "open_screen", "screen": "profile" } }
+          "do": "biometricAuth",
+          "title": "Identity Verification",
+          "subtitle": "Confirm your identity to access My Medicine",
+          "authenticators": ["BIOMETRIC_STRONG", "DEVICE_CREDENTIAL"],
+          "onSuccess": [
+            { "do": "animate", "target": "lockOverlay", "alpha": 0, "durationMs": 600 },
+            { "do": "removeOverlay", "overlay": "lockOverlay" },
+            { "do": "emit", "event": "startAllDataServices" }
+          ],
+          "onError": [{ "do": "finishAffinity" }]
+        }
+      ],
+      "else": [{ "do": "emit", "event": "startAllDataServices" }]
+    },
+
+    "startAllDataServices": [
+      { "do": "startDataSources", "sources": ["user", "latestArticle", "appointments", "notificationCount", "banners", "network"] },
+      { "do": "fcmRegisterToken", "saveTo": "Users/{{currentUser.uid}}", "field": "fcmToken" },
+      { "do": "fcmSubscribeTopic", "topic": "all_users" },
+      { "do": "startService", "service": "FirestoreNotificationService", "foreground": true },
+      { "do": "startService", "service": "HelpChatNotificationService", "foreground": true },
+      { "do": "startService", "service": "notificationdemo", "foreground": true },
+      {
+        "do": "delay",
+        "ms": 3000,
+        "then": [
+          {
+            "if": "!screen.isFinishing && !popup('profileUpdate').isShowing",
+            "then": [{ "do": "showPopup", "popup": "InstagramFollowPopup" }]
+          }
+        ]
+      }
+    ],
+
+    "onDataChange": {
+      "user": [
+        {
+          "if": "!user.isCommunityProfileUpdated && !popup('profileUpdate').isShowing && !popup('InstagramFollowPopup').isShowing",
+          "then": [{ "do": "showPopup", "popup": "ProfileUpdatePopup", "id": "profileUpdate" }],
+          "else": [{ "do": "dismissPopup", "id": "profileUpdate" }]
+        }
+      ],
+      "notificationCount": [{ "do": "setState", "key": "notificationBadgeVisible", "value": "notificationCount.visible" }],
+      "network": [
+        {
+          "if": "network.lost",
+          "then": [{ "do": "setState", "key": "isOffline", "value": true }, { "do": "runAnimation", "name": "offlineBarSlideIn" }]
+        },
+        {
+          "if": "network.available && state.isOffline",
+          "then": [
+            { "do": "setState", "key": "isOffline", "value": false },
+            { "do": "runAnimation", "name": "onlineBarShowThenHide", "hideAfterMs": 5000 }
           ]
         }
       ]
     },
 
-    { "type": "image", "url": "https://picsum.photos/seed/medicine/900/450", "height": 190, "radius": 28 },
+    "onDestroy": [
+      { "do": "disposeComponent", "id": "bannerPager" },
+      { "do": "removeAllListeners" },
+      { "do": "unregisterNetworkCallback" }
+    ]
+  },
 
-    { "type": "text", "text": "⚡ Quick Actions", "size": 20, "bold": true, "color": "#FFFFFF" },
-    {
-      "type": "row", "spacing": 10,
+  "animations": {
+    "pullRefreshStretch": {
+      "content": [
+        { "pivotY": 0, "translationYdp": 40, "scaleY": 1.06, "durationMs": 280, "interpolator": "decelerate" },
+        { "translationYdp": 0, "scaleY": 1, "durationMs": 800, "interpolator": "overshoot", "tension": 2.2 }
+      ],
+      "appBar": [
+        { "translationYdp": 12, "durationMs": 280, "interpolator": "decelerate" },
+        { "translationYdp": 0, "durationMs": 700, "interpolator": "overshoot", "tension": 1.5 }
+      ]
+    },
+    "offlineBarSlideIn": { "target": "offlineBar", "from": { "translationY": "-height" }, "to": { "translationY": 0 }, "durationMs": 400, "interpolator": "accelerateDecelerate" },
+    "onlineBarShowThenHide": { "target": "offlineBar", "slideOutDurationMs": 500, "thenVisibility": "gone" },
+    "touchScale": { "down": { "scale": 0.95, "durationMs": 150 }, "up": { "scale": 1, "durationMs": 150 } }
+  },
+
+  "overlays": {
+    "lockOverlay": {
+      "type": "Frame",
+      "fullScreen": true,
+      "background": "@token/bg",
+      "elevation": 1000,
+      "clickable": true,
+      "focusable": true,
       "children": [
-        { "type": "column", "bg": "#F97316", "radius": 20, "padding": 16, "spacing": 4,
-          "action": { "type": "toast", "message": "Reminders ⏰" },
+        {
+          "type": "Column",
+          "gravity": "center",
+          "children": [{ "type": "Icon", "icon": "LOCK", "sizeDp": 72, "tint": "@token/textSecondary" }]
+        }
+      ]
+    },
+
+    "approvalCelebration": {
+      "type": "Frame",
+      "fullScreen": true,
+      "background": "@theme/celebrationOverlay",
+      "clickable": true,
+      "focusable": true,
+      "initialAlpha": 0,
+      "enter": { "alpha": 1, "durationMs": 600 },
+      "afterEnter": [
+        { "do": "animate", "target": "#approvedImg", "scaleFrom": 0.7, "scaleTo": 1, "pivot": [0.5, 0.5], "durationMs": 800, "interpolator": "overshoot" },
+        { "do": "delay", "ms": 4000 },
+        { "do": "animate", "target": "self", "alpha": 0, "durationMs": 1000 },
+        { "do": "removeOverlay", "overlay": "approvalCelebration" }
+      ],
+      "children": [
+        {
+          "type": "Column",
+          "gravity": "center",
+          "frameGravity": "center",
+          "marginDp": { "start": 40, "end": 40 },
           "children": [
-            { "type": "text", "text": "⏰", "size": 30, "color": "#FFFFFF" },
-            { "type": "text", "text": "Reminders", "size": 13, "bold": true, "color": "#FFFFFF" }
-          ] },
-        { "type": "column", "bg": "#06B6D4", "radius": 20, "padding": 16, "spacing": 4,
-          "action": { "type": "toast", "message": "Doctors 🩺" },
+            { "type": "Image", "id": "approvedImg", "src": "@drawable/approved", "scaleType": "fitCenter", "widthDp": 140, "heightDp": 140, "marginDp": { "bottom": 28 } },
+            { "type": "Text", "text": "@string/congratulations", "sizeSp": 30, "font": "sans-serif-black", "bold": true, "color": "@token/textPrimary", "align": "center" },
+            { "type": "Text", "text": "@string/appointment_approved_msg", "sizeSp": 15, "font": "sans-serif-medium", "color": "@token/textSecondary", "align": "center", "paddingDp": { "top": 12 }, "lineSpacingMultiplier": 1.3 }
+          ]
+        }
+      ]
+    }
+  },
+
+  "templates": {
+    "categoryCard": {
+      "params": ["title", "icon", "tint", "onClick"],
+      "node": {
+        "type": "Card",
+        "radiusDp": 24,
+        "background": "@token/surface",
+        "strokeDp": 1,
+        "strokeColor": "@token/border",
+        "elevationDp": 2,
+        "grid": { "columnSpan": 1, "weight": 1, "width": 0, "heightDp": 140, "marginDp": 6 },
+        "onClick": "{{onClick}}",
+        "children": [
+          {
+            "type": "Column",
+            "gravity": "center",
+            "paddingDp": 16,
+            "children": [
+              {
+                "type": "Card",
+                "radiusDp": 18,
+                "background": "@token/iconBg",
+                "widthDp": 52,
+                "heightDp": 56,
+                "children": [{ "type": "Icon", "icon": "{{icon}}", "sizeDp": 24, "tint": "{{tint}}", "frameGravity": "center" }]
+              },
+              { "type": "Text", "text": "{{title}}", "sizeSp": 14, "font": "sans-serif-medium", "color": "@token/textPrimary", "align": "center", "paddingDp": { "top": 14 } }
+            ]
+          }
+        ]
+      }
+    },
+
+    "featureCard": {
+      "params": ["title", "subtitle", "icon", "iconColor", "iconBgColor", "iconRadiusDp", "badgeText", "badgeBg", "badgeTextColor", "onClick"],
+      "node": {
+        "type": "Card",
+        "radiusDp": 24,
+        "background": "@token/surface",
+        "strokeDp": 1,
+        "strokeColor": "@token/border",
+        "elevationDp": 4,
+        "grid": { "columnSpan": 1, "weight": 1, "width": 0, "heightDp": 140, "marginDp": 6 },
+        "touchFeedback": "@animation/touchScale",
+        "onClick": "{{onClick}}",
+        "children": [
+          {
+            "type": "Frame",
+            "children": [
+              {
+                "type": "Column",
+                "gravity": "center",
+                "paddingDp": 16,
+                "children": [
+                  {
+                    "type": "Card",
+                    "radiusDp": "{{iconRadiusDp}}",
+                    "background": "{{iconBgColor}}",
+                    "elevationDp": 0,
+                    "widthDp": 52,
+                    "heightDp": 56,
+                    "children": [{ "type": "Icon", "icon": "{{icon}}", "sizeDp": 28, "tint": "{{iconColor}}", "frameGravity": "center" }]
+                  },
+                  { "type": "Text", "text": "{{title}}", "sizeSp": 14, "font": "sans-serif-medium", "bold": true, "color": "@token/textPrimary", "align": "center", "paddingDp": { "top": 12 } },
+                  { "type": "Text", "text": "{{subtitle}}", "sizeSp": 10, "color": "@token/textSecondary", "align": "center", "paddingDp": { "top": 2 } }
+                ]
+              },
+              {
+                "type": "Card",
+                "radiusDp": 8,
+                "background": "{{badgeBg}}",
+                "elevationDp": 2,
+                "frameGravity": "top|end",
+                "marginDp": { "top": 10, "end": 10 },
+                "children": [
+                  { "type": "Text", "text": "{{badgeText}}", "sizeSp": 8, "bold": true, "color": "{{badgeTextColor}}", "paddingDp": { "start": 6, "end": 6, "top": 2, "bottom": 2 } }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+
+    "sectionHeader": {
+      "params": ["title", "showViewAll", "onViewAll"],
+      "node": {
+        "type": "Row",
+        "gravity": "centerVertical",
+        "paddingDp": { "top": 40, "bottom": 16 },
+        "children": [
+          { "type": "Text", "text": "{{title}}", "sizeSp": 12, "font": "sans-serif-medium", "bold": true, "color": "@token/textSecondary", "weight": 1 },
+          { "type": "Text", "visibleIf": "{{showViewAll}}", "text": "@string/view_all", "sizeSp": 12, "font": "sans-serif-bold", "bold": true, "color": "@token/primary", "onClick": "{{onViewAll}}" }
+        ]
+      }
+    },
+
+    "articleCard": {
+      "params": ["article"],
+      "node": {
+        "type": "Card",
+        "radiusDp": 24,
+        "background": "@token/surface",
+        "strokeDp": 1,
+        "strokeColor": "@token/border",
+        "elevationDp": 4,
+        "onClick": { "do": "navigate", "to": "ArticleDetailActivity", "extras": { "ARTICLE_ID": "{{article.id}}" } },
+        "children": [
+          {
+            "type": "Column",
+            "children": [
+              {
+                "type": "Frame",
+                "heightDp": 180,
+                "children": [
+                  {
+                    "type": "Image",
+                    "src": "{{article.imageUrl}}",
+                    "fallback": "@drawable/applogo",
+                    "scaleType": "centerCrop",
+                    "width": "match",
+                    "height": "match"
+                  },
+                  {
+                    "type": "Card",
+                    "radiusDp": 10,
+                    "background": "@token/primary",
+                    "elevationDp": 4,
+                    "marginDp": { "start": 16, "top": 16 },
+                    "children": [
+                      { "type": "Text", "text": "LATEST ARTICLE", "sizeSp": 9, "font": "sans-serif-black", "bold": true, "color": "#FFFFFF", "paddingDp": { "start": 12, "end": 12, "top": 5, "bottom": 5 } }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Column",
+                "paddingDp": { "start": 20, "top": 16, "end": 20, "bottom": 20 },
+                "children": [
+                  { "type": "Text", "text": "{{article.title}}", "sizeSp": 17, "font": "sans-serif-black", "bold": true, "color": "@token/textPrimary", "maxLines": 2, "ellipsize": "end" },
+                  {
+                    "type": "Row",
+                    "gravity": "centerVertical",
+                    "paddingDp": { "top": 8, "bottom": 16 },
+                    "children": [
+                      { "type": "Icon", "icon": "CALENDAR", "sizeDp": 12, "tint": "@token/textSecondary" },
+                      { "type": "Text", "text": "{{article.date}} | {{article.views}} views", "sizeSp": 11, "color": "@token/textSecondary", "paddingDp": { "start": 6 } }
+                    ]
+                  },
+                  {
+                    "type": "Card",
+                    "radiusDp": 14,
+                    "background": "@token/iconBg",
+                    "strokeDp": 1,
+                    "strokeColor": "@token/border",
+                    "width": "wrap",
+                    "onClick": { "do": "navigate", "to": "ArticleDetailActivity", "extras": { "ARTICLE_ID": "{{article.id}}" } },
+                    "children": [
+                      {
+                        "type": "Row",
+                        "gravity": "centerVertical",
+                        "paddingDp": { "start": 16, "end": 16, "top": 8, "bottom": 8 },
+                        "children": [
+                          { "type": "Text", "text": "Read Full Article", "sizeSp": 12, "font": "sans-serif-bold", "bold": true, "color": "@token/primary" },
+                          { "type": "Icon", "icon": "PLAY", "sizeDp": 12, "tint": "@token/primary", "marginDp": { "start": 8 } }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+
+    "appointmentCard": {
+      "params": ["a"],
+      "node": {
+        "type": "Card",
+        "radiusDp": 24,
+        "background": "@token/surface",
+        "strokeDp": 1,
+        "strokeColor": "@token/border",
+        "elevationDp": 3,
+        "marginDp": { "bottom": 12 },
+        "onClick": { "do": "navigate", "to": "appointmentstatus", "extras": { "bookingId": "{{a.id}}" } },
+        "children": [
+          {
+            "type": "Column",
+            "paddingDp": 20,
+            "children": [
+              {
+                "type": "Row",
+                "gravity": "centerVertical",
+                "children": [
+                  {
+                    "type": "Frame",
+                    "widthDp": 52,
+                    "heightDp": 52,
+                    "children": [
+                      { "type": "Image", "visibleIf": "a.doctorPic != ''", "src": "{{a.doctorPic}}", "circleCrop": true, "placeholder": "@drawable/applogo", "scaleType": "centerCrop", "width": "match", "height": "match" },
+                      { "type": "Image", "visibleIf": "a.doctorPic == '' && a.isApproved", "src": "@drawable/approved", "scaleType": "centerCrop", "width": "match", "height": "match" },
+                      {
+                        "type": "Icon",
+                        "visibleIf": "a.doctorPic == '' && !a.isApproved",
+                        "icon": "ABOUT",
+                        "sizeDp": 52,
+                        "tint": { "switch": "a.status", "cases": { "Rejected": "@token/richRed" }, "default": "@token/yellow" }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Column",
+                    "weight": 1,
+                    "paddingDp": { "start": 16 },
+                    "children": [
+                      { "type": "Text", "text": "Dr. {{a.doctorName}}", "sizeSp": 16, "bold": true, "color": "@token/textPrimary" },
+                      { "type": "Text", "text": "{{a.specialty}}", "sizeSp": 13, "color": "@token/textSecondary" }
+                    ]
+                  },
+                  {
+                    "type": "Card",
+                    "radiusDp": 10,
+                    "elevationDp": 0,
+                    "background": {
+                      "switch": "a.status",
+                      "cases": { "Approved": "@token/green@12%", "Confirmed": "@token/green@12%", "Rejected": "@token/richRed@12%" },
+                      "default": "@token/yellow@12%"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "text": "{{upper(a.status)}}",
+                        "sizeSp": 9,
+                        "font": "sans-serif-black",
+                        "bold": true,
+                        "color": {
+                          "switch": "a.status",
+                          "cases": { "Approved": "@token/green", "Confirmed": "@token/green", "Rejected": "@token/richRed" },
+                          "default": "@token/yellow"
+                        },
+                        "paddingDp": { "start": 12, "end": 12, "top": 5, "bottom": 5 }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Row",
+                "visibleIf": "a.status == 'Rejected' && a.reason != ''",
+                "gravity": "centerVertical",
+                "background": { "color": "@token/richRed@8%", "radiusDp": 12 },
+                "paddingDp": { "start": 12, "end": 12, "top": 8, "bottom": 8 },
+                "marginDp": { "top": 16 },
+                "children": [
+                  { "type": "Icon", "icon": "ALERT", "sizeDp": 14, "tint": "@token/richRed" },
+                  { "type": "Text", "text": "Reason: {{a.reason}}", "sizeSp": 11, "font": "sans-serif-medium", "color": "@token/richRed", "paddingDp": { "start": 8 } }
+                ]
+              },
+              { "type": "Divider", "heightDp": 1, "color": "@token/border", "marginDp": { "top": 16, "bottom": 16 } },
+              {
+                "type": "Row",
+                "gravity": "centerVertical",
+                "children": [
+                  { "type": "Icon", "icon": "CALENDAR", "sizeDp": 14, "tint": "@token/textSecondary" },
+                  { "type": "Text", "text": "{{a.schedule}}", "sizeSp": 12, "color": "@token/textSecondary", "paddingDp": { "start": 8 }, "weight": 1 },
+                  {
+                    "type": "Row",
+                    "visibleIf": "a.isApproved",
+                    "gravity": "centerVertical",
+                    "children": [
+                      { "type": "Text", "text": "@string/seat: ", "sizeSp": 11, "color": "@token/textSecondary" },
+                      { "type": "Text", "text": "{{a.seat}}", "sizeSp": 13, "bold": true, "color": "@token/primary" }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+
+    "specialtyItem": {
+      "params": ["s"],
+      "node": {
+        "type": "Card",
+        "radiusDp": 26,
+        "background": "@token/surface",
+        "strokeDp": 1,
+        "strokeColor": "@token/border",
+        "elevationDp": 2,
+        "widthDp": 110,
+        "heightDp": 145,
+        "marginDp": { "end": 16 },
+        "onClick": { "do": "navigate", "to": "doctors", "extras": { "DOCTOR_TYPE": "{{s.type}}" } },
+        "children": [
+          {
+            "type": "Column",
+            "gravity": "center",
+            "paddingDp": { "start": 8, "end": 8, "top": 16, "bottom": 16 },
+            "children": [
+              {
+                "type": "Card",
+                "radiusDp": 20,
+                "background": "transparent",
+                "widthDp": 70,
+                "heightDp": 70,
+                "children": [{ "type": "Image", "src": "{{s.image}}", "scaleType": "centerCrop" }]
+              },
+              { "type": "Text", "text": "{{s.name}}", "sizeSp": 13, "font": "sans-serif-medium", "bold": true, "color": "@token/textPrimary", "align": "center", "paddingDp": { "top": 12 } }
+            ]
+          }
+        ]
+      }
+    }
+  },
+
+  "layout": {
+    "type": "Drawer",
+    "id": "drawerLayout",
+    "scrimColor": "@token/scrim",
+    "main": {
+      "type": "CoordinatorLayout",
+      "id": "mainContent",
+      "background": "@token/bg",
+      "children": [
+        {
+          "type": "AppBar",
+          "id": "appBar",
+          "background": "@token/bg",
+          "elevationDp": 0,
+          "insets": { "applyTo": "toolbar", "top": "max(systemBars.top, cutout.top) + 12dp" },
           "children": [
-            { "type": "text", "text": "🩺", "size": 30, "color": "#FFFFFF" },
-            { "type": "text", "text": "Doctors", "size": 13, "bold": true, "color": "#FFFFFF" }
-          ] },
-        { "type": "column", "bg": "#EC4899", "radius": 20, "padding": 16, "spacing": 4,
-          "action": { "type": "toast", "message": "Orders 📦" },
-          "children": [
-            { "type": "text", "text": "📦", "size": 30, "color": "#FFFFFF" },
-            { "type": "text", "text": "Orders", "size": 13, "bold": true, "color": "#FFFFFF" }
-          ] }
-      ]
-    },
+            {
+              "type": "Row",
+              "id": "toolbar",
+              "gravity": "centerVertical",
+              "paddingDp": { "start": 20, "top": 20, "end": 20, "bottom": 12 },
+              "children": [
+                {
+                  "type": "Card",
+                  "id": "btnMenu",
+                  "radiusDp": 12,
+                  "background": "@token/iconBg",
+                  "strokeDp": 0,
+                  "elevationDp": 1,
+                  "widthDp": 44,
+                  "heightDp": 44,
+                  "onClick": { "do": "openDrawer", "side": "start" },
+                  "children": [{ "type": "Icon", "icon": "ADD", "sizeDp": 20, "tint": "@token/textPrimary", "frameGravity": "center" }]
+                },
+                {
+                  "type": "Text",
+                  "id": "appTitle",
+                  "text": "@string/app_name",
+                  "sizeSp": 18,
+                  "font": "sans-serif-medium",
+                  "bold": true,
+                  "color": "@token/textPrimary",
+                  "align": "center",
+                  "weight": 1
+                },
+                {
+                  "type": "Frame",
+                  "widthDp": 44,
+                  "heightDp": 44,
+                  "marginDp": { "end": 12 },
+                  "children": [
+                    {
+                      "type": "Card",
+                      "id": "btnNotif",
+                      "radiusDp": 12,
+                      "background": "@token/iconBg",
+                      "strokeDp": 0,
+                      "elevationDp": 1,
+                      "width": "match",
+                      "height": "match",
+                      "onClick": [
+                        { "do": "setState", "key": "notificationBadgeVisible", "value": false },
+                        { "do": "navigate", "to": "notifications" }
+                      ],
+                      "children": [{ "type": "Icon", "icon": "NOTIFICATION", "sizeDp": 20, "tint": "@token/textPrimary", "frameGravity": "center" }]
+                    },
+                    {
+                      "type": "Text",
+                      "id": "notificationBadge",
+                      "visibleIf": "state.notificationBadgeVisible && notificationCount.visible",
+                      "text": "{{notificationCount.label}}",
+                      "sizeSp": 9,
+                      "bold": true,
+                      "color": "#FFFFFF",
+                      "align": "center",
+                      "gravity": "center",
+                      "background": { "shape": "oval", "color": "#FF0000" },
+                      "widthDp": 16,
+                      "heightDp": 16,
+                      "frameGravity": "top|end",
+                      "marginDp": { "top": 2, "end": 2 }
+                    }
+                  ]
+                },
+                {
+                  "type": "Card",
+                  "id": "profileContainer",
+                  "radiusDp": 22,
+                  "background": "@token/surface",
+                  "strokeDp": 1,
+                  "strokeColor": "@token/border",
+                  "widthDp": 44,
+                  "heightDp": 44,
+                  "onClick": { "do": "navigate", "to": "userprofile" },
+                  "children": [
+                    {
+                      "type": "Image",
+                      "id": "profileImage",
+                      "src": "{{user.profilePic}}",
+                      "srcResolver": "urlOrLocalFile",
+                      "fallback": "@drawable/applogo",
+                      "circleCrop": true,
+                      "scaleType": "centerCrop"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "Row",
+              "id": "locationBar",
+              "gravity": "centerVertical",
+              "paddingDp": { "start": 20, "end": 20, "bottom": 12 },
+              "onClick": { "do": "navigate", "to": "userprofile" },
+              "children": [
+                { "type": "Icon", "icon": "LOCATION", "sizeDp": 16, "tint": "@token/primary" },
+                {
+                  "type": "Text",
+                  "id": "locationText",
+                  "text": "{{user.locationText}}",
+                  "placeholder": "Loading saved location...",
+                  "sizeSp": 12,
+                  "font": "sans-serif-medium",
+                  "bold": true,
+                  "color": "@token/textSecondary",
+                  "paddingDp": { "start": 8, "end": 4 },
+                  "maxLines": 1,
+                  "ellipsize": "end"
+                },
+                { "type": "Icon", "icon": "ARROW_DOWN", "sizeDp": 12, "tint": "@token/textSecondary" }
+              ]
+            },
+            {
+              "type": "Text",
+              "id": "offlineBar",
+              "visibleIf": "state.isOffline || state.showOnlineBanner",
+              "text": "{{state.isOffline ? '@string/offline' : '@string/online'}}",
+              "background": "{{state.isOffline ? '@token/richRed' : '@token/green'}}",
+              "heightDp": 32,
+              "width": "match",
+              "sizeSp": 11,
+              "font": "sans-serif-medium",
+              "color": "#FFFFFF",
+              "align": "center",
+              "gravity": "center"
+            }
+          ]
+        },
 
-    {
-      "type": "card", "bg": "#111C34", "radius": 24, "padding": 20, "spacing": 2,
-      "children": [
-        { "type": "text", "text": "📊 Aaj ka Health Score", "size": 14, "color": "#94A3B8" },
-        { "type": "text", "text": "92%", "size": 52, "bold": true, "color": "#22C55E" },
-        { "type": "text", "text": "Medicines on time ✅ Keep it up champ! 🏆", "size": 14, "color": "#CBD5E1" }
-      ]
-    },
+        {
+          "type": "PullToRefresh",
+          "id": "swipeRefresh",
+          "scrollingBehavior": "appBarScrollingView",
+          "indicatorColor": "@token/primary",
+          "indicatorBackground": "@token/surface",
+          "autoStopAfterMs": 1500,
+          "onRefresh": [
+            { "do": "animate", "preset": "@animation/pullRefreshStretch" },
+            { "do": "refreshDataSources", "sources": ["user", "appointments", "banners", "latestArticle"] }
+          ],
+          "child": {
+            "type": "Scroll",
+            "id": "nestedScroll",
+            "fillViewport": true,
+            "overscroll": "always",
+            "child": {
+              "type": "Column",
+              "id": "content",
+              "paddingDp": { "start": 24, "top": 10, "end": 24, "bottom": 100 },
+              "insets": {
+                "bottom": "navMode == 'Gesture' ? systemBars.bottom + 110dp : systemBars.bottom + 90dp"
+              },
+              "children": [
+                { "type": "Text", "text": "@string/welcome", "sizeSp": 14, "font": "sans-serif", "color": "@token/textSecondary" },
+                {
+                  "type": "Text",
+                  "id": "userNameText",
+                  "text": "{{user.displayName}}",
+                  "placeholder": "...",
+                  "sizeSp": 28,
+                  "font": "sans-serif-black",
+                  "bold": true,
+                  "color": "@token/textPrimary",
+                  "paddingDp": { "bottom": 24 }
+                },
 
-    { "type": "text", "text": "🗓️ Aaj ka Schedule", "size": 20, "bold": true, "color": "#FFFFFF" },
-    {
-      "type": "row", "fillWidth": true, "bg": "#1E293B", "radius": 18, "padding": 14, "spacing": 14,
-      "action": { "type": "toast", "message": "Marked as taken ✅" },
-      "children": [
-        { "type": "text", "text": "💊", "size": 30, "color": "#FFFFFF" },
-        { "type": "column", "children": [
-          { "type": "text", "text": "Paracetamol 500mg", "size": 16, "bold": true, "color": "#FFFFFF" },
-          { "type": "text", "text": "8:00 AM · Khane ke baad", "size": 13, "color": "#94A3B8" }
-        ] }
-      ]
-    },
-    {
-      "type": "row", "fillWidth": true, "bg": "#1E293B", "radius": 18, "padding": 14, "spacing": 14,
-      "action": { "type": "toast", "message": "Marked as taken ✅" },
-      "children": [
-        { "type": "text", "text": "🧴", "size": 30, "color": "#FFFFFF" },
-        { "type": "column", "children": [
-          { "type": "text", "text": "Vitamin D3", "size": 16, "bold": true, "color": "#FFFFFF" },
-          { "type": "text", "text": "2:00 PM · Lunch ke saath", "size": 13, "color": "#94A3B8" }
-        ] }
-      ]
-    },
-    {
-      "type": "row", "fillWidth": true, "bg": "#1E293B", "radius": 18, "padding": 14, "spacing": 14,
-      "action": { "type": "toast", "message": "Marked as taken ✅" },
-      "children": [
-        { "type": "text", "text": "🌙", "size": 30, "color": "#FFFFFF" },
-        { "type": "column", "children": [
-          { "type": "text", "text": "Omega 3", "size": 16, "bold": true, "color": "#FFFFFF" },
-          { "type": "text", "text": "9:30 PM · Sone se pehle", "size": 13, "color": "#94A3B8" }
-        ] }
-      ]
-    },
+                {
+                  "type": "Card",
+                  "id": "searchBar",
+                  "radiusDp": 20,
+                  "background": "@token/surface",
+                  "elevationDp": 3,
+                  "strokeDp": 1,
+                  "strokeColor": "@token/border",
+                  "onClick": { "do": "navigate", "to": "scarchengine" },
+                  "children": [
+                    {
+                      "type": "Row",
+                      "gravity": "centerVertical",
+                      "paddingDp": { "start": 20, "top": 14, "end": 20, "bottom": 14 },
+                      "children": [
+                        { "type": "Icon", "icon": "SEARCH", "sizeDp": 20, "tint": "@token/textSecondary" },
+                        { "type": "Text", "text": "@string/search_hint", "sizeSp": 15, "color": "@token/textSecondary", "paddingDp": { "start": 16 } }
+                      ]
+                    }
+                  ]
+                },
 
-    {
-      "type": "column", "fillWidth": true, "bg": "#EF4444", "radius": 24, "padding": 20, "spacing": 6,
-      "children": [
-        { "type": "text", "text": "🔥 FLAT 30% OFF", "size": 26, "bold": true, "color": "#FFFFFF" },
-        { "type": "text", "text": "Pehle order par. Code: SERVER30", "size": 14, "color": "#FEE2E2" },
-        { "type": "button", "text": "Claim Offer 🎁", "bg": "#111827",
-          "action": { "type": "open_url", "url": "https://github.com/mymedicineofficial/sdui" } }
+                {
+                  "type": "Grid",
+                  "id": "mainGrid",
+                  "columns": 2,
+                  "marginDp": { "top": 32 },
+                  "children": [
+                    {
+                      "use": "categoryCard",
+                      "args": {
+                        "title": "@string/find_doctor",
+                        "icon": "SEARCH",
+                        "tint": "@token/primary",
+                        "onClick": { "do": "navigate", "to": "doctors" }
+                      }
+                    },
+                    {
+                      "use": "featureCard",
+                      "args": {
+                        "title": "AI med Assistant",
+                        "subtitle": "Analyze symptoms with Gemini AI",
+                        "icon": "AI_MAGIC",
+                        "iconColor": "@token/primary",
+                        "iconBgColor": "@token/primary@10%",
+                        "iconRadiusDp": 20,
+                        "badgeText": "BETA",
+                        "badgeBg": "@token/yellow",
+                        "badgeTextColor": "#000000",
+                        "onClick": { "do": "navigate", "to": "mymedai", "transition": "sceneTransition" }
+                      }
+                    },
+                    {
+                      "use": "featureCard",
+                      "args": {
+                        "title": "My Medmates",
+                        "subtitle": "Connect with others",
+                        "icon": "CHAT",
+                        "iconColor": "@token/purple",
+                        "iconBgColor": "@token/purple@10%",
+                        "iconRadiusDp": 20,
+                        "badgeText": "NEW",
+                        "badgeBg": "@token/richRed",
+                        "badgeTextColor": "#FFFFFF",
+                        "onClick": { "do": "navigate", "to": "MyMedmatesActivity" }
+                      }
+                    },
+                    {
+                      "use": "categoryCard",
+                      "args": {
+                        "title": "@string/health_hub",
+                        "icon": "CALENDAR",
+                        "tint": "@token/yellow",
+                        "onClick": { "do": "navigate", "to": "healthhub" }
+                      }
+                    }
+                  ]
+                },
+
+                {
+                  "type": "Card",
+                  "id": "sosBanner",
+                  "radiusDp": 24,
+                  "background": "#450A0A",
+                  "elevationDp": 8,
+                  "marginDp": { "top": 28 },
+                  "children": [
+                    {
+                      "type": "Row",
+                      "gravity": "centerVertical",
+                      "paddingDp": 24,
+                      "background": {
+                        "gradient": { "orientation": "TL_BR", "colors": ["@token/sosStart", "@token/sosEnd"] },
+                        "radiusDp": 24
+                      },
+                      "children": [
+                        {
+                          "type": "Column",
+                          "weight": 1,
+                          "marginDp": { "end": 16 },
+                          "children": [
+                            { "type": "Text", "text": "@string/emergency", "sizeSp": 20, "font": "sans-serif-black", "bold": true, "color": "#FFFFFF" },
+                            { "type": "Text", "text": "@string/emergency_desc", "sizeSp": 13, "color": "@token/sosSubtitle", "paddingDp": { "top": 4 } }
+                          ]
+                        },
+                        {
+                          "type": "Card",
+                          "radiusDp": 16,
+                          "background": "#FFFFFF",
+                          "onClick": { "do": "dial", "number": "112" },
+                          "children": [
+                            { "type": "Text", "text": "@string/call_now", "sizeSp": 11, "font": "sans-serif-black", "bold": true, "color": "@token/sosStart", "paddingDp": { "start": 18, "end": 18, "top": 10, "bottom": 10 } }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+
+                {
+                  "use": "sectionHeader",
+                  "args": { "title": "Health Articles", "showViewAll": true, "onViewAll": { "do": "navigate", "to": "healthhub" } }
+                },
+                {
+                  "type": "Column",
+                  "id": "articleSectionContainer",
+                  "marginDp": { "top": 4 },
+                  "children": [
+                    {
+                      "type": "Repeat",
+                      "source": "latestArticle",
+                      "as": "article",
+                      "item": { "use": "articleCard", "args": { "article": "{{article}}" } }
+                    }
+                  ]
+                },
+
+                {
+                  "use": "sectionHeader",
+                  "args": { "title": "@string/upcoming_appointments", "showViewAll": true, "onViewAll": { "do": "navigate", "to": "appointments" } }
+                },
+                {
+                  "type": "Column",
+                  "id": "appointmentSectionContainer",
+                  "marginDp": { "top": 4 },
+                  "children": [
+                    {
+                      "type": "Repeat",
+                      "source": "appointments",
+                      "as": "a",
+                      "item": { "use": "appointmentCard", "args": { "a": "{{a}}" } },
+                      "empty": {
+                        "type": "Card",
+                        "radiusDp": 24,
+                        "background": "@token/surface",
+                        "strokeDp": 1,
+                        "strokeColor": "@token/border",
+                        "elevationDp": 2,
+                        "children": [
+                          {
+                            "type": "Column",
+                            "gravity": "center",
+                            "paddingDp": { "start": 24, "top": 28, "end": 24, "bottom": 28 },
+                            "children": [
+                              { "type": "Text", "text": "@string/no_appointments", "sizeSp": 15, "font": "sans-serif-medium", "color": "@token/textSecondary" }
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                },
+
+                { "use": "sectionHeader", "args": { "title": "@string/upcoming_medicine", "showViewAll": false } },
+                {
+                  "type": "Card",
+                  "radiusDp": 24,
+                  "background": "@token/surface",
+                  "strokeDp": 1,
+                  "strokeColor": "@token/border",
+                  "elevationDp": 2,
+                  "children": [
+                    {
+                      "type": "Row",
+                      "gravity": "centerVertical",
+                      "paddingDp": 20,
+                      "children": [
+                        { "type": "Icon", "icon": "ADD", "sizeDp": 28, "tint": "@token/sky" },
+                        { "type": "Text", "text": "@string/track_meds", "sizeSp": 16, "font": "sans-serif-medium", "bold": true, "color": "@token/textPrimary", "paddingDp": { "start": 16 }, "weight": 1 },
+                        { "type": "Icon", "icon": "PLAY", "sizeDp": 18, "tint": "@token/textSecondary" }
+                      ]
+                    }
+                  ]
+                },
+
+                { "use": "sectionHeader", "args": { "title": "@string/special_offers", "showViewAll": false } },
+                {
+                  "type": "Column",
+                  "id": "bannerContainer",
+                  "marginDp": { "top": 4 },
+                  "children": [
+                    {
+                      "type": "Pager",
+                      "id": "bannerPager",
+                      "heightDp": 180,
+                      "offscreenPageLimit": 1,
+                      "source": "banners",
+                      "autoScroll": true
+                    },
+                    {
+                      "type": "PagerIndicator",
+                      "id": "bannerIndicator",
+                      "for": "bannerPager",
+                      "gravity": "center",
+                      "paddingDp": { "top": 12 }
+                    }
+                  ]
+                },
+
+                {
+                  "use": "sectionHeader",
+                  "args": {
+                    "title": "@string/popular_specialties",
+                    "showViewAll": true,
+                    "onViewAll": { "do": "navigate", "to": "doctors", "extras": { "DOCTOR_TYPE": "All" } }
+                  }
+                },
+                {
+                  "type": "HorizontalScroll",
+                  "id": "specialtyScroller",
+                  "scrollbar": false,
+                  "overscroll": "never",
+                  "paddingDp": { "top": 4, "bottom": 4 },
+                  "children": [
+                    {
+                      "type": "Repeat",
+                      "source": "specialties",
+                      "as": "s",
+                      "orientation": "horizontal",
+                      "item": { "use": "specialtyItem", "args": { "s": "{{s}}" } }
+                    }
+                  ]
+                },
+
+                { "use": "sectionHeader", "args": { "title": "@string/daily_health_tip", "showViewAll": false } },
+                {
+                  "type": "Card",
+                  "radiusDp": 24,
+                  "background": "@token/surfaceLight",
+                  "strokeDp": 1,
+                  "strokeColor": "@token/border",
+                  "elevationDp": 1,
+                  "children": [
+                    {
+                      "type": "Row",
+                      "gravity": "centerVertical",
+                      "paddingDp": 24,
+                      "children": [
+                        { "type": "Icon", "icon": "ABOUT", "sizeDp": 36, "tint": "@token/primary" },
+                        {
+                          "type": "Column",
+                          "paddingDp": { "start": 20 },
+                          "children": [
+                            { "type": "Text", "text": "@string/stay_hydrated", "sizeSp": 16, "bold": true, "color": "@token/textPrimary" },
+                            { "type": "Text", "text": "@string/water_tip", "sizeSp": 13, "color": "@token/textSecondary", "lineSpacingMultiplier": 1.2 }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+
+                {
+                  "type": "Text",
+                  "id": "footer",
+                  "text": "@string/footer_text",
+                  "sizeSp": 12,
+                  "font": "sans-serif-medium",
+                  "color": "@token/textSecondary",
+                  "align": "center",
+                  "alpha": 0.7,
+                  "paddingDp": { "top": 64, "bottom": 24 }
+                }
+              ]
+            }
+          }
+        }
       ]
     },
+    "drawerPanel": {
+      "type": "Frame",
+      "id": "sideMenuContainer",
+      "side": "start",
+      "widthPercent": 70,
+      "content": { "native": "SideMenuProvider", "note": "Side menu stays native for now; define a separate sidemenu SDUI screen to move it to JSON as well." }
+    }
+  },
 
-    { "type": "image", "url": "https://picsum.photos/seed/healthy/900/400", "height": 150, "radius": 24 },
-    {
-      "type": "card", "bg": "#064E3B", "radius": 20, "padding": 16, "spacing": 4,
-      "children": [
-        { "type": "text", "text": "💡 Health Tip", "size": 16, "bold": true, "color": "#6EE7B7" },
-        { "type": "text", "text": "Roz 8 glass paani piyo aur dawai time par lo. Chhoti aadat, bada fayda 💧", "size": 14, "color": "#D1FAE5" }
-      ]
-    },
+  "iconRegistry": {
+    "note": "Icon names map to IconEngine constants on the client.",
+    "names": ["ADD", "NOTIFICATION", "LOCATION", "ARROW_DOWN", "SEARCH", "CALENDAR", "PLAY", "ABOUT", "ALERT", "LOCK", "AI_MAGIC", "CHAT"]
+  },
 
-    { "type": "text", "text": "Made with JSON ❤️ edit home.json → refresh → boom 💥", "size": 12, "color": "#64748B", "align": "center", "fillWidth": true }
-  ]
+  "navigationRegistry": {
+    "note": "`navigate.to` values map to these client activities.",
+    "routes": {
+      "userprofile": "userprofile",
+      "notifications": "notifications",
+      "scarchengine": "scarchengine",
+      "doctors": "doctors",
+      "healthhub": "healthhub",
+      "appointments": "appointments",
+      "appointmentstatus": "appointmentstatus",
+      "mymedai": "mymedai",
+      "MyMedmatesActivity": "MyMedmatesActivity",
+      "ArticleDetailActivity": "ArticleDetailActivity"
+    }
+  }
 }
