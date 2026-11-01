@@ -1,0 +1,80 @@
+{
+  "stringValues": {
+    "app_name": "My Medicine",
+    "offline": "No internet connection",
+    "online": "Back online",
+    "welcome": "Welcome back,",
+    "search_hint": "Search doctors, medicines...",
+    "find_doctor": "Find Doctor",
+    "health_hub": "Health Hub",
+    "upcoming_appointments": "UPCOMING APPOINTMENTS",
+    "upcoming_medicine": "UPCOMING MEDICINE",
+    "special_offers": "SPECIAL OFFERS",
+    "popular_specialties": "POPULAR SPECIALTIES",
+    "daily_health_tip": "DAILY HEALTH TIP",
+    "footer_text": "Made with care for your health",
+    "view_all": "VIEW ALL",
+    "seat": "Seat",
+    "call_now": "CALL NOW",
+    "emergency": "Emergency SOS",
+    "emergency_desc": "Need urgent help? Call 112 instantly.",
+    "no_appointments": "No upcoming appointments",
+    "track_meds": "Track your medicines",
+    "stay_hydrated": "Stay Hydrated",
+    "water_tip": "Drink at least 8 glasses of water daily.",
+    "congratulations": "Congratulations!",
+    "appointment_approved_msg": "Your appointment has been approved."
+  },
+
+  "themeValues": {
+    "colorBg": "#0B0F1A",
+    "colorSurface": "#141B2D",
+    "colorSurfaceLight": "#1B2438",
+    "colorIconBg": "#1F2A44",
+    "colorBorder": "#2A3550",
+    "colorPrimary": "#3B82F6",
+    "colorTextPrimary": "#F1F5F9",
+    "colorTextSecondary": "#94A3B8",
+    "colorRichRed": "#EF4444",
+    "colorGreen": "#22C55E",
+    "colorYellow": "#FACC15"
+  },
+
+  "mockData": {
+    "user": {
+      "displayName": "Test User",
+      "locationText": "Mumbai, Maharashtra",
+      "profilePic": "",
+      "isCommunityProfileUpdated": true
+    },
+    "latestArticle": [
+      {
+        "id": "art_1",
+        "title": "5 Simple Habits for a Healthier Heart",
+        "imageUrl": "https://picsum.photos/seed/heartarticle/900/450",
+        "date": "01 Nov 2026",
+        "views": 1280
+      }
+    ],
+    "appointments": [
+      {
+        "id": "b1", "status": "Approved", "doctorName": "Sharma", "specialty": "Cardiologist",
+        "schedule": "05 Nov | 10:30 AM", "seat": "A12", "doctorPic": "", "reason": "", "isApproved": true
+      },
+      {
+        "id": "b2", "status": "Pending", "doctorName": "Verma", "specialty": "Dentist",
+        "schedule": "07 Nov | 04:00 PM", "seat": "Pending", "doctorPic": "", "reason": "", "isApproved": false
+      },
+      {
+        "id": "b3", "status": "Rejected", "doctorName": "Khan", "specialty": "Skin Specialist",
+        "schedule": "08 Nov | 11:00 AM", "seat": "Pending", "doctorPic": "", "reason": "Doctor unavailable on this date", "isApproved": false
+      }
+    ],
+    "notificationCount": { "count": 12, "label": "9+", "visible": true },
+    "banners": [
+      { "imageUrl": "https://picsum.photos/seed/ban1/900/450", "title": "Flat 30% off on medicines" },
+      { "imageUrl": "https://picsum.photos/seed/ban2/900/450", "title": "Free doctor consultation" },
+      { "imageUrl": "https://picsum.photos/seed/ban3/900/450", "title": "Health checkup packages" }
+    ]
+  }
+}
