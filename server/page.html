@@ -1,177 +1,154 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Page not found • My Medicine</title>
+<link rel="icon" href="https://i.postimg.cc/X7LfYHbx/applogo.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
 <style>
-:root {
-  --bg: #0B0F1A;
-  --card: #141B2D;
-  --line: #2A3550;
-  --text: #F1F5F9;
-  --muted: #94A3B8;
-  --primary: #3B82F6;
-  --green: #22C55E;
-  --yellow: #FACC15;
+:root{
+  --black:#000000;
+  --bg:#0a0a0a;
+  --surface:#121212;
+  --surface2:#181818;
+  --surface3:#242424;
+  --hover:#2a2a2a;
+  --border:rgba(255,255,255,.08);
+  --border-soft:rgba(255,255,255,.05);
+  --green:#1db954;
+  --green-bright:#1ed760;
+  --text:#ffffff;
+  --muted:#b3b3b3;
+  --muted2:#727272;
+  --font-head:'Manrope',system-ui,sans-serif;
+  --font-body:'Inter',system-ui,sans-serif;
 }
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: var(--bg); color: var(--text); padding: 20px 20px 40px 20px; }
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  font-family:var(--font-body);
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+  display:flex;flex-direction:column;
+}
+h1,h2{font-family:var(--font-head);margin:0}
+p{margin:0}
+a,button{cursor:pointer;text-decoration:none;color:inherit;font:inherit}
+:focus-visible{outline:2px solid var(--green-bright);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}
 
-.top { display: flex; justify-content: space-between; align-items: center; }
-.hello { font-size: 14px; color: var(--muted); }
-.name { font-size: 28px; font-weight: 900; margin-top: 2px; }
-.bell { width: 46px; height: 46px; border-radius: 50%; background: var(--card); border: 1px solid var(--line);
-        display: flex; justify-content: center; align-items: center; font-size: 20px; }
+/* header */
+.head{
+  display:flex;align-items:center;gap:11px;padding:22px 28px;
+}
+.head img{width:34px;height:34px;border-radius:9px;object-fit:cover}
+.head span{font-family:var(--font-head);font-weight:800;font-size:16px;letter-spacing:-.3px}
 
-.search { margin-top: 22px; background: var(--card); border: 1px solid var(--line); border-radius: 18px;
-          padding: 15px 18px; color: var(--muted); font-size: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+/* main */
+.wrap{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  padding:24px 24px 60px;
+}
+.card{
+  width:100%;max-width:560px;text-align:center;position:relative;
+}
 
-.hero { margin-top: 22px; border-radius: 28px; padding: 24px; background: linear-gradient(135deg, #6C2BD9, #3B82F6); }
-.hero .tag { font-size: 12px; font-weight: 800; letter-spacing: 2px; color: #E9D5FF; }
-.hero h2 { font-size: 30px; font-weight: 900; margin-top: 8px; line-height: 1.2; }
-.hero p { font-size: 14px; color: #DDD6FE; margin-top: 8px; }
-.hero .row { display: flex; gap: 10px; margin-top: 18px; }
+/* pulse / vitals mark instead of a generic "404" numeral block */
+.mark{
+  width:100%;height:96px;margin:0 auto 8px;
+  display:block;
+}
+.mark path{
+  fill:none;stroke:var(--green);stroke-width:3;
+  stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:600;stroke-dashoffset:600;
+  animation:draw 1.3s cubic-bezier(.2,.8,.2,1) forwards;
+}
+@keyframes draw{to{stroke-dashoffset:0}}
+@media (prefers-reduced-motion:reduce){.mark path{stroke-dashoffset:0;animation:none}}
 
-.btn { background: #FFFFFF; color: #4C1D95; font-weight: 800; font-size: 14px; padding: 12px 20px; border-radius: 16px; }
-.btn2 { background: rgba(255,255,255,0.18); color: #FFFFFF; font-weight: 700; font-size: 14px; padding: 12px 20px; border-radius: 16px; }
+.eyebrow{color:var(--green-bright);font-weight:700;font-size:12.5px;margin-top:18px}
+h1{font-size:34px;line-height:1.15;letter-spacing:-.9px;font-weight:800;margin-top:12px}
+.copy{margin-top:14px;color:var(--muted);font-size:14.5px;line-height:1.65;max-width:420px;margin-left:auto;margin-right:auto}
+.path{
+  margin-top:18px;display:inline-block;padding:8px 14px;border-radius:999px;
+  background:var(--surface2);color:var(--muted2);font-size:12px;font-family:monospace,monospace;
+  word-break:break-all;
+}
 
-.title { font-size: 12px; font-weight: 800; letter-spacing: 1.5px; color: var(--muted); margin-top: 34px; margin-bottom: 14px; text-transform: uppercase; }
+.actions{display:flex;gap:12px;justify-content:center;margin-top:32px;flex-wrap:wrap}
+.btn-solid{
+  background:var(--green);color:#04140a;font-weight:800;font-size:14px;
+  padding:14px 26px;border-radius:999px;transition:transform .15s,background .15s;
+}
+.btn-solid:hover{background:var(--green-bright);transform:scale(1.03)}
+.btn-outline{
+  border:1px solid rgba(255,255,255,.35);color:var(--text);font-weight:800;font-size:14px;
+  padding:14px 26px;border-radius:999px;transition:border-color .15s,background .15s;
+}
+.btn-outline:hover{border-color:#fff;background:rgba(255,255,255,.06)}
 
-.grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-.tile { background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 18px; }
-.tile .emo { font-size: 30px; }
-.tile .lbl { font-size: 15px; font-weight: 700; margin-top: 10px; }
-.tile .sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.help{
+  margin-top:40px;padding-top:28px;border-top:1px solid var(--border-soft);
+  display:flex;flex-direction:column;gap:10px;
+}
+.help p{color:var(--muted2);font-size:12.5px}
+.help a{color:var(--muted);font-size:13px;font-weight:700}
+.help a:hover{color:var(--text)}
 
-.scroll { display: flex; gap: 12px; overflow-x: auto; }
-.chip { width: 96px; background: var(--card); border: 1px solid var(--line); border-radius: 24px; padding: 16px 8px; text-align: center; }
-.chip .emo { font-size: 30px; }
-.chip .lbl { font-size: 13px; font-weight: 700; margin-top: 8px; }
+footer{padding:20px;color:var(--muted2);font-size:11.5px;text-align:center}
 
-.card { background: var(--card); border: 1px solid var(--line); border-radius: 24px; padding: 18px; margin-bottom: 12px; }
-.card .row { display: flex; align-items: center; gap: 14px; }
-.avatar { width: 52px; height: 52px; border-radius: 50%; background: #1F2A44; font-size: 24px;
-          display: flex; justify-content: center; align-items: center; }
-.doc { font-size: 16px; font-weight: 800; }
-.spec { font-size: 13px; color: var(--muted); margin-top: 2px; }
-.badge { font-size: 10px; font-weight: 900; padding: 5px 10px; border-radius: 10px; }
-.ok { background: rgba(34,197,94,0.15); color: var(--green); }
-.wait { background: rgba(250,204,21,0.15); color: var(--yellow); }
-.when { font-size: 12px; color: var(--muted); margin-top: 14px; }
-
-.sos { margin-top: 28px; border-radius: 26px; padding: 22px; background: linear-gradient(135deg, #991B1B, #450A0A); }
-.sos h2 { font-size: 22px; font-weight: 900; }
-.sos p { font-size: 13px; color: #FECACA; margin-top: 4px; }
-.sos .btn { margin-top: 14px; color: #991B1B; }
-
-.article { background: var(--card); border: 1px solid var(--line); border-radius: 26px; overflow: hidden; }
-.article .body { padding: 18px; }
-.article h3 { font-size: 18px; font-weight: 900; margin: 0; }
-.article .meta { font-size: 11px; color: var(--muted); margin-top: 8px; }
-
-.tip { background: #1B2438; border-radius: 24px; padding: 20px; display: flex; gap: 16px; align-items: center; }
-.tip .ico { font-size: 34px; }
-.tip h4 { font-size: 16px; font-weight: 800; margin: 0; }
-.tip p { font-size: 13px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
-
-.footer { text-align: center; font-size: 12px; color: var(--muted); margin-top: 40px; }
+@media (max-width:520px){
+  .head{padding:18px 20px}
+  h1{font-size:26px}
+  .actions{flex-direction:column}
+  .btn-solid,.btn-outline{width:100%;text-align:center}
+}
 </style>
 </head>
 <body>
 
-  <div class="top">
-    <div>
-      <div class="hello">Welcome back,</div>
-      <div class="name">Test User 👋</div>
-    </div>
-    <div class="bell" data-action="toast:Notifications 🔔">🔔</div>
+  <div class="head">
+    <img src="https://i.postimg.cc/X7LfYHbx/applogo.jpg" alt="My Medicine">
+    <span>My Medicine</span>
   </div>
 
-  <div class="search" data-action="toast:Search opens here">🔍&nbsp; Search doctors, medicines...</div>
+  <div class="wrap">
+    <div class="card">
+      <svg class="mark" viewBox="0 0 300 96" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M0 48 H70 L88 14 L112 82 L132 30 L148 60 L162 48 H300"/>
+      </svg>
 
-  <div class="hero">
-    <div class="tag">💊 MY MEDICINE</div>
-    <h2>Tumhari health,<br>Hamari zimmedari ✨</h2>
-    <p>Ye poori screen HTML se bani hai, koi WebView nahi. Native Compose.</p>
-    <div class="row">
-      <a class="btn" data-action="screen:profile">Profile</a>
-      <a class="btn2" data-action="toast:Booking soon 🚀">Book Now</a>
-    </div>
-  </div>
+      <div class="eyebrow">Error 404</div>
+      <h1>We couldn't find that page</h1>
+      <p class="copy">The link may be broken, or the page may have moved. Let's get you back to browsing doctors and health articles.</p>
+      <div class="path" id="brokenPath"></div>
 
-  <div class="title">Quick Actions</div>
-  <div class="grid">
-    <div class="tile" data-action="toast:Find Doctor">
-      <div class="emo">🩺</div><div class="lbl">Find Doctor</div><div class="sub">500+ specialists</div>
-    </div>
-    <div class="tile" data-action="toast:AI Assistant">
-      <div class="emo">✨</div><div class="lbl">AI Assistant</div><div class="sub">Analyze symptoms</div>
-    </div>
-    <div class="tile" data-action="toast:Medmates">
-      <div class="emo">💬</div><div class="lbl">My Medmates</div><div class="sub">Connect with others</div>
-    </div>
-    <div class="tile" data-action="toast:Health Hub">
-      <div class="emo">📅</div><div class="lbl">Health Hub</div><div class="sub">Articles and tips</div>
-    </div>
-  </div>
-
-  <div class="title">Popular Specialties</div>
-  <div class="scroll">
-    <div class="chip" data-action="toast:Heart"><div class="emo">🫀</div><div class="lbl">Heart</div></div>
-    <div class="chip" data-action="toast:Dentist"><div class="emo">🦷</div><div class="lbl">Dentist</div></div>
-    <div class="chip" data-action="toast:Eyes"><div class="emo">👁️</div><div class="lbl">Eyes</div></div>
-    <div class="chip" data-action="toast:Lungs"><div class="emo">🫁</div><div class="lbl">Lungs</div></div>
-    <div class="chip" data-action="toast:Skin"><div class="emo">🧴</div><div class="lbl">Skin</div></div>
-    <div class="chip" data-action="toast:Ortho"><div class="emo">🦴</div><div class="lbl">Ortho</div></div>
-  </div>
-
-  <div class="title">Upcoming Appointments</div>
-  <div class="card" data-action="toast:Appointment details">
-    <div class="row">
-      <div class="avatar">👨‍⚕️</div>
-      <div style="flex:1">
-        <div class="doc">Dr. Sharma</div>
-        <div class="spec">Cardiologist</div>
+      <div class="actions">
+        <a class="btn-solid" href="index.html">Back to Home</a>
+        <a class="btn-outline" href="index.html#doctors">Find Doctors</a>
       </div>
-      <div class="badge ok">APPROVED</div>
-    </div>
-    <div class="when">📅 05 Nov | 10:30 AM &nbsp;·&nbsp; Seat A12</div>
-  </div>
-  <div class="card" data-action="toast:Appointment details">
-    <div class="row">
-      <div class="avatar">👩‍⚕️</div>
-      <div style="flex:1">
-        <div class="doc">Dr. Verma</div>
-        <div class="spec">Dentist</div>
+
+      <div class="help">
+        <p>Still stuck?</p>
+        <a href="index.html#how">See how appointments work</a>
       </div>
-      <div class="badge wait">PENDING</div>
-    </div>
-    <div class="when">📅 07 Nov | 04:00 PM</div>
-  </div>
-
-  <div class="sos">
-    <h2>🚨 Emergency SOS</h2>
-    <p>Need urgent help? Call 112 instantly.</p>
-    <a class="btn" data-action="dial:112">CALL NOW</a>
-  </div>
-
-  <div class="title">Health Articles</div>
-  <div class="article">
-    <img src="https://picsum.photos/seed/heartarticle/900/450" style="width:100%; height:170px; object-fit:cover">
-    <div class="body">
-      <h3>5 Simple Habits for a Healthier Heart</h3>
-      <div class="meta">📅 01 Nov 2026 | 1280 views</div>
     </div>
   </div>
 
-  <div class="title">Daily Health Tip</div>
-  <div class="tip">
-    <div class="ico">💧</div>
-    <div style="flex:1">
-      <h4>Stay Hydrated</h4>
-      <p>Drink at least 8 glasses of water daily and take medicines on time.</p>
-    </div>
-  </div>
+  <footer>© My Medicine · Healthcare, on demand</footer>
 
-  <div class="footer">Made with HTML ❤️ rendered natively by Kotlin</div>
-
+  <script>
+    (function(){
+      var el = document.getElementById('brokenPath');
+      if (el && location.pathname) el.textContent = location.pathname;
+      else if (el) el.style.display = 'none';
+    })();
+  </script>
 </body>
 </html>
