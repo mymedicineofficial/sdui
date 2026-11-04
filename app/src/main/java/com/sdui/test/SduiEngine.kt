@@ -1,11 +1,12 @@
-@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@file:OptIn(ExperimentalFoundationApi::class)
+
 package com.sdui.test
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -39,8 +40,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.toColorInt
+import androidx.core.net.toUri
 import coil.compose.AsyncImage
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.seconds
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -68,7 +72,7 @@ private val DefaultTheme: Map<String, Color> = mapOf(
     "colorTextSecondary" to Color(0xFF94A3B8),
     "colorRichRed" to Color(0xFFEF4444),
     "colorGreen" to Color(0xFF22C55E),
-    "colorYellow" to Color(0xFFFACC15)
+    "colorYellow" to Color(0xFFFACC15),
 )
 
 private val IconMap: Map<String, String> = mapOf(
@@ -105,7 +109,7 @@ private fun truthy(v: Any?): Boolean = when (v) {
 
 private fun str(v: Any?): String = when (v) {
     null -> ""
-    is Double -> if (v == Math.floor(v) && !v.isInfinite()) v.toLong().toString() else v.toString()
+    is Double -> if ((v == kotlin.math.floor(v)) && !v.isInfinite()) v.toLong().toString() else v.toString()
     else -> v.toString()
 }
 
@@ -247,7 +251,7 @@ private val Interp = Regex("\\{\\{(.+?)\\}\\}")
 private val StringRef = Regex("@string/([A-Za-z0-9_]+)")
 
 private fun evalExpr(s: String, scope: Scope): Any? =
-    try { ExprParser(s, scope).parse() } catch (e: Exception) { null }
+    try { ExprParser(s, scope).parse() } catch (_: Exception) { null }
 
 private fun interpolate(raw: String, scope: Scope): String =
     if (!raw.contains("{{")) raw else Interp.replace(raw) { m -> str(evalExpr(m.groupValues[1], scope)) }
@@ -310,7 +314,7 @@ internal class SduiCtx(
         val s = s0.trim()
         if (s.isEmpty() || depth > 6) return null
         if (s == "transparent") return Color.Transparent
-        if (s.startsWith("#")) return runCatching { Color(android.graphics.Color.parseColor(s)) }.getOrNull()
+        if (s.startsWith("#")) return runCatching { Color(s.toColorInt()) }.getOrNull()
         if (s.startsWith("@token/")) {
             val body = s.removePrefix("@token/")
             val name = body.substringBefore("@")
@@ -404,7 +408,7 @@ internal class SduiCtx(
                 }
                 "dial" -> runCatching {
                     context.startActivity(
-                        Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + a.optString("number")))
+                        Intent(Intent.ACTION_DIAL, "tel:${a.optString("number")}".toUri())
                             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     )
                 }
@@ -423,8 +427,7 @@ private fun JSONObject.kids(): List<JSONObject> {
 }
 
 private fun JSONObject.insetsOf(key: String): PaddingValues {
-    val v = opt(key)
-    return when (v) {
+    return when (val v = opt(key)) {
         is Number -> PaddingValues(v.toDouble().dp)
         is JSONObject -> PaddingValues(
             start = v.optDouble("start", 0.0).dp,
@@ -432,6 +435,7 @@ private fun JSONObject.insetsOf(key: String): PaddingValues {
             end = v.optDouble("end", 0.0).dp,
             bottom = v.optDouble("bottom", 0.0).dp
         )
+        null, JSONObject.NULL -> PaddingValues(0.dp)
         else -> PaddingValues(0.dp)
     }
 }
@@ -440,19 +444,19 @@ private fun parentFills(n: JSONObject, parent: String): Boolean =
     parent == "Column" || parent == "Root" || parent == "Card" || parent == "CardFixed" ||
         (parent == "Frame" && !n.has("frameGravity"))
 
-private fun JSONObject.base(extra: Modifier, fillWidth: Boolean): Modifier {
-    var m = extra.padding(insetsOf("marginDp"))
-    val ws = optString("width")
-    val hs = optString("height")
+private fun Modifier.base(n: JSONObject, fillWidth: Boolean): Modifier {
+    var m = this.padding(n.insetsOf("marginDp"))
+    val ws = n.optString("width")
+    val hs = n.optString("height")
     m = when {
-        has("widthDp") -> m.width(optDouble("widthDp").dp)
+        n.has("widthDp") -> m.width(n.optDouble("widthDp").dp)
         ws == "match" -> m.fillMaxWidth()
         ws == "wrap" -> m
         fillWidth -> m.fillMaxWidth()
         else -> m
     }
     m = when {
-        has("heightDp") -> m.height(optDouble("heightDp").dp)
+        n.has("heightDp") -> m.height(n.optDouble("heightDp").dp)
         hs == "match" -> m.fillMaxHeight()
         else -> m
     }
@@ -492,16 +496,22 @@ private fun alignOf(g: String): Alignment? {
     val parts = g.split("|")
     val v = when { "top" in parts -> 0; "bottom" in parts -> 2; else -> 1 }
     val h = when { "start" in parts -> 0; "end" in parts -> 2; else -> 1 }
-    return when {
-        v == 0 && h == 0 -> Alignment.TopStart
-        v == 0 && h == 1 -> Alignment.TopCenter
-        v == 0 && h == 2 -> Alignment.TopEnd
-        v == 1 && h == 0 -> Alignment.CenterStart
-        v == 1 && h == 1 -> Alignment.Center
-        v == 1 && h == 2 -> Alignment.CenterEnd
-        v == 2 && h == 0 -> Alignment.BottomStart
-        v == 2 && h == 1 -> Alignment.BottomCenter
-        else -> Alignment.BottomEnd
+    return when (v) {
+        0 -> when (h) {
+            0 -> Alignment.TopStart
+            1 -> Alignment.TopCenter
+            else -> Alignment.TopEnd
+        }
+        1 -> when (h) {
+            0 -> Alignment.CenterStart
+            1 -> Alignment.Center
+            else -> Alignment.CenterEnd
+        }
+        else -> when (h) {
+            0 -> Alignment.BottomStart
+            1 -> Alignment.BottomCenter
+            else -> Alignment.BottomEnd
+        }
     }
 }
 
@@ -518,6 +528,7 @@ private fun fontWeightOf(n: JSONObject): FontWeight {
 
 // ------------------------------------------------------------------ entry point
 
+@Suppress("ComposableFunctionCallWithoutComposePlugin")
 @Composable
 fun SduiScreen(root: JSONObject, onReload: () -> Unit) {
     val context = LocalContext.current
@@ -547,44 +558,44 @@ fun SduiScreen(root: JSONObject, onReload: () -> Unit) {
 // ------------------------------------------------------------------ renderer
 
 @Composable
-internal fun RenderNode(node: JSONObject, ctx: SduiCtx, scope0: Scope, parent: String, extra: Modifier) {
+internal fun RenderNode(node: JSONObject, ctx: SduiCtx, scope0: Scope, parent: String, modifier: Modifier) {
     val (n, scope) = ctx.expandUse(node, scope0)
     if (n.length() == 0) return
     if (!ctx.visible(n, scope)) return
     when (n.optString("type")) {
-        "Drawer" -> n.optJSONObject("main")?.let { RenderNode(it, ctx, scope, parent, extra) }
-        "CoordinatorLayout" -> CoordinatorNode(n, ctx, scope, extra)
-        "AppBar" -> AppBarNode(n, ctx, scope, extra)
-        "PullToRefresh" -> Box(extra.fillMaxWidth()) {
+        "Drawer" -> n.optJSONObject("main")?.let { RenderNode(it, ctx, scope, parent, modifier) }
+        "CoordinatorLayout" -> CoordinatorNode(n, ctx, scope, modifier)
+        "AppBar" -> AppBarNode(n, ctx, scope, modifier)
+        "PullToRefresh" -> Box(modifier.fillMaxWidth()) {
             n.optJSONObject("child")?.let { RenderNode(it, ctx, scope, "Column", Modifier.fillMaxSize()) }
         }
-        "Scroll" -> Column(extra.verticalScroll(rememberScrollState())) {
+        "Scroll" -> Column(modifier.verticalScroll(rememberScrollState())) {
             n.optJSONObject("child")?.let { RenderNode(it, ctx, scope, "Column", Modifier) }
         }
-        "Column" -> ColumnNode(n, ctx, scope, parent, extra)
-        "Row" -> RowNode(n, ctx, scope, parent, extra)
-        "Frame" -> FrameNode(n, ctx, scope, parent, extra)
-        "Card" -> CardNode(n, ctx, scope, parent, extra)
-        "Text" -> TextNode(n, ctx, scope, parent, extra)
-        "Icon" -> IconNode(n, ctx, scope, extra)
-        "Image" -> ImageNode(n, ctx, scope, parent, extra)
-        "Divider" -> Box(n.base(extra, parentFills(n, parent)).background(ctx.color(n.opt("color"), scope) ?: Color.Gray))
-        "Grid" -> GridNode(n, ctx, scope, parent, extra)
+        "Column" -> ColumnNode(n, ctx, scope, parent, modifier)
+        "Row" -> RowNode(n, ctx, scope, parent, modifier)
+        "Frame" -> FrameNode(n, ctx, scope, parent, modifier)
+        "Card" -> CardNode(n, ctx, scope, parent, modifier)
+        "Text" -> TextNode(n, ctx, scope, parent, modifier)
+        "Icon" -> IconNode(n, ctx, scope, modifier)
+        "Image" -> ImageNode(n, ctx, scope, parent, modifier)
+        "Divider" -> Box(modifier.base(n, parentFills(n, parent)).background(ctx.color(n.opt("color"), scope) ?: Color.Gray))
+        "Grid" -> GridNode(n, ctx, scope, parent, modifier)
         "Repeat" -> RepeatNode(n, ctx, scope, parent)
         "HorizontalScroll" -> Row(
-            n.base(extra, parentFills(n, parent)).padding(n.insetsOf("paddingDp")).horizontalScroll(rememberScrollState())
+            modifier.base(n, fillWidth = true).padding(n.insetsOf("paddingDp")).horizontalScroll(rememberScrollState())
         ) {
             for (c in n.kids()) RenderNode(c, ctx, scope, "Row", Modifier)
         }
-        "Pager" -> PagerNode(n, ctx, scope, extra)
-        "PagerIndicator" -> IndicatorNode(n, ctx, scope, extra)
+        "Pager" -> PagerNode(n, ctx, scope, modifier)
+        "PagerIndicator" -> IndicatorNode(n, ctx, scope, modifier)
         else -> { /* unknown type: skip */ }
     }
 }
 
 @Composable
-private fun CoordinatorNode(n: JSONObject, ctx: SduiCtx, scope: Scope, extra: Modifier) {
-    Column(n.base(extra, true).nodeBg(ctx, scope, n)) {
+private fun CoordinatorNode(n: JSONObject, ctx: SduiCtx, scope: Scope, modifier: Modifier) {
+    Column(modifier.base(n, fillWidth = true).nodeBg(ctx, scope, n)) {
         for (c in n.kids()) {
             val refresh = c.optString("type") == "PullToRefresh"
             RenderNode(c, ctx, scope, "Column", if (refresh) Modifier.weight(1f) else Modifier)
@@ -593,15 +604,15 @@ private fun CoordinatorNode(n: JSONObject, ctx: SduiCtx, scope: Scope, extra: Mo
 }
 
 @Composable
-private fun AppBarNode(n: JSONObject, ctx: SduiCtx, scope: Scope, extra: Modifier) {
-    Column(n.base(extra, true).nodeBg(ctx, scope, n).statusBarsPadding()) {
+private fun AppBarNode(n: JSONObject, ctx: SduiCtx, scope: Scope, modifier: Modifier) {
+    Column(modifier.base(n, fillWidth = true).nodeBg(ctx, scope, n).statusBarsPadding()) {
         for (c in n.kids()) RenderNode(c, ctx, scope, "Column", Modifier)
     }
 }
 
 @Composable
-private fun ColumnNode(n: JSONObject, ctx: SduiCtx, scope: Scope, parent: String, extra: Modifier) {
-    val mod = n.base(extra, parentFills(n, parent)).nodeBg(ctx, scope, n).nodeClick(ctx, scope, n)
+private fun ColumnNode(n: JSONObject, ctx: SduiCtx, scope: Scope, parent: String, modifier: Modifier) {
+    val mod = modifier.base(n, parentFills(n, parent)).nodeBg(ctx, scope, n).nodeClick(ctx, scope, n)
         .padding(n.insetsOf("paddingDp"))
     val g = n.optString("gravity")
     Column(
@@ -617,8 +628,8 @@ private fun ColumnNode(n: JSONObject, ctx: SduiCtx, scope: Scope, parent: String
 }
 
 @Composable
-private fun RowNode(n: JSONObject, ctx: SduiCtx, scope: Scope, parent: String, extra: Modifier) {
-    val mod = n.base(extra, parentFills(n, parent)).nodeBg(ctx, scope, n).nodeClick(ctx, scope, n)
+private fun RowNode(n: JSONObject, ctx: SduiCtx, scope: Scope, parent: String, modifier: Modifier) {
+    val mod = modifier.base(n, parentFills(n, parent)).nodeBg(ctx, scope, n).nodeClick(ctx, scope, n)
         .padding(n.insetsOf("paddingDp"))
     val g = n.optString("gravity")
     Row(
@@ -634,8 +645,8 @@ private fun RowNode(n: JSONObject, ctx: SduiCtx, scope: Scope, parent: String, e
 }
 
 @Composable
-private fun FrameNode(n: JSONObject, ctx: SduiCtx, scope: Scope, parent: String, extra: Modifier) {
-    var mod = n.base(extra, parentFills(n, parent)).nodeBg(ctx, scope, n).nodeClick(ctx, scope, n)
+private fun FrameNode(n: JSONObject, ctx: SduiCtx, scope: Scope, parent: String, modifier: Modifier) {
+    var mod = modifier.base(n, parentFills(n, parent)).nodeBg(ctx, scope, n).nodeClick(ctx, scope, n)
         .padding(n.insetsOf("paddingDp"))
     if (parent == "CardFixed" && !n.has("heightDp")) mod = mod.fillMaxHeight()
     Box(mod) {
@@ -648,13 +659,13 @@ private fun FrameNode(n: JSONObject, ctx: SduiCtx, scope: Scope, parent: String,
 }
 
 @Composable
-private fun CardNode(n: JSONObject, ctx: SduiCtx, scope: Scope, parent: String, extra: Modifier) {
+private fun CardNode(n: JSONObject, ctx: SduiCtx, scope: Scope, parent: String, modifier: Modifier) {
     val shape = RoundedCornerShape(n.optDouble("radiusDp", 0.0).dp)
     val bg = ctx.color(n.opt("background"), scope) ?: Color.Transparent
     val stroke = n.optDouble("strokeDp", 0.0)
     val strokeColor = ctx.color(n.opt("strokeColor"), scope) ?: Color.Transparent
     val fixedH = n.has("heightDp")
-    val mod = n.base(extra, parentFills(n, parent))
+    val mod = modifier.base(n, parentFills(n, parent))
     Surface(
         modifier = mod,
         shape = shape,
@@ -675,12 +686,12 @@ private fun CardNode(n: JSONObject, ctx: SduiCtx, scope: Scope, parent: String, 
 }
 
 @Composable
-private fun TextNode(n: JSONObject, ctx: SduiCtx, scope: Scope, parent: String, extra: Modifier) {
+private fun TextNode(n: JSONObject, ctx: SduiCtx, scope: Scope, parent: String, modifier: Modifier) {
     var txt = ctx.text(n.optString("text"), scope)
     if (txt.isEmpty()) txt = ctx.text(n.optString("placeholder"), scope)
     val align = n.optString("align")
     val centerish = align == "center" || align == "end"
-    val box = n.base(extra, parentFills(n, parent) && centerish).nodeBg(ctx, scope, n).nodeClick(ctx, scope, n)
+    val box = modifier.base(n, parentFills(n, parent) && centerish).nodeBg(ctx, scope, n).nodeClick(ctx, scope, n)
         .alpha(n.optDouble("alpha", 1.0).toFloat())
     val size = n.optDouble("sizeSp", 14.0)
     val lh = n.optDouble("lineSpacingMultiplier", 0.0)
@@ -707,11 +718,11 @@ private fun TextNode(n: JSONObject, ctx: SduiCtx, scope: Scope, parent: String, 
 }
 
 @Composable
-private fun IconNode(n: JSONObject, ctx: SduiCtx, scope: Scope, extra: Modifier) {
+private fun IconNode(n: JSONObject, ctx: SduiCtx, scope: Scope, modifier: Modifier) {
     val glyph = IconMap[ctx.text(n.optString("icon"), scope)] ?: "•"
     val size = n.optDouble("sizeDp", 24.0)
     Box(
-        modifier = extra.padding(n.insetsOf("marginDp")).size(size.dp),
+        modifier = modifier.padding(n.insetsOf("marginDp")).size(size.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
@@ -723,27 +734,27 @@ private fun IconNode(n: JSONObject, ctx: SduiCtx, scope: Scope, extra: Modifier)
 }
 
 @Composable
-private fun Placeholder(ctx: SduiCtx, mod: Modifier) {
+private fun Placeholder(ctx: SduiCtx, modifier: Modifier) {
     Box(
-        modifier = mod.background(ctx.colorString("@token/surfaceLight") ?: Color.DarkGray),
+        modifier = modifier.background(ctx.colorString("@token/surfaceLight") ?: Color.DarkGray),
         contentAlignment = Alignment.Center
     ) { Text("🖼️", fontSize = 20.sp) }
 }
 
+@Suppress("DiscouragedApi")
 @Composable
-private fun ImageNode(n: JSONObject, ctx: SduiCtx, scope: Scope, parent: String, extra: Modifier) {
-    val appCtx = LocalContext.current
+private fun ImageNode(n: JSONObject, ctx: SduiCtx, scope: Scope, parent: String, modifier: Modifier) {
     var src = ctx.text(n.optString("src"), scope).trim()
     if (src.isEmpty()) src = n.optString("fallback")
     val hasDims = n.has("widthDp") || n.has("heightDp") || n.optString("width") == "match" || n.optString("height") == "match"
-    var mod = n.base(extra, false)
+    var mod = modifier.base(n, fillWidth = false)
     if (!hasDims && (parent == "Card" || parent == "CardFixed" || parent == "Frame")) mod = mod.fillMaxSize()
     if (n.optBoolean("circleCrop", false)) mod = mod.clip(CircleShape)
     val scale = if (n.optString("scaleType") == "fitCenter") ContentScale.Fit else ContentScale.Crop
     when {
         src.startsWith("http") -> AsyncImage(model = src, contentDescription = null, modifier = mod, contentScale = scale)
         src.startsWith("@drawable/") -> {
-            val id = appCtx.resources.getIdentifier(src.removePrefix("@drawable/"), "drawable", appCtx.packageName)
+            val id = ctx.context.resources.getIdentifier(src.removePrefix("@drawable/"), "drawable", ctx.context.packageName)
             if (id != 0) Image(painter = painterResource(id), contentDescription = null, modifier = mod, contentScale = scale)
             else Placeholder(ctx, mod)
         }
@@ -752,10 +763,10 @@ private fun ImageNode(n: JSONObject, ctx: SduiCtx, scope: Scope, parent: String,
 }
 
 @Composable
-private fun GridNode(n: JSONObject, ctx: SduiCtx, scope: Scope, parent: String, extra: Modifier) {
+private fun GridNode(n: JSONObject, ctx: SduiCtx, scope: Scope, parent: String, modifier: Modifier) {
     val cols = n.optInt("columns", 2)
     val items = n.kids().map { ctx.expandUse(it, scope) }
-    Column(n.base(extra, parentFills(n, parent))) {
+    Column(modifier.base(n, parentFills(n, parent))) {
         for (rowItems in items.chunked(cols)) {
             Row(Modifier.fillMaxWidth()) {
                 for ((node, sc) in rowItems) {
@@ -787,21 +798,21 @@ private fun RepeatNode(n: JSONObject, ctx: SduiCtx, scope: Scope, parent: String
 }
 
 @Composable
-private fun PagerNode(n: JSONObject, ctx: SduiCtx, scope: Scope, extra: Modifier) {
+private fun PagerNode(n: JSONObject, ctx: SduiCtx, scope: Scope, modifier: Modifier) {
     val items = ctx.list(n.optString("source"), scope)
     val h = n.optDouble("heightDp", 180.0).dp
-    val mod = extra.fillMaxWidth().height(h)
+    val mod = modifier.fillMaxWidth().height(h)
     if (items.isEmpty()) {
         Placeholder(ctx, mod.clip(RoundedCornerShape(24.dp)))
         return
     }
-    val st = rememberPagerState(pageCount = { items.size })
+    val st = rememberPagerState { items.size }
     val id = n.optString("id")
     if (id.isNotEmpty()) ctx.pagerStates[id] = st
     if (n.optBoolean("autoScroll", false) && items.size > 1) {
         LaunchedEffect(items.size) {
             while (true) {
-                delay(3000)
+                delay(3.seconds)
                 st.animateScrollToPage((st.currentPage + 1) % items.size)
             }
         }
@@ -831,13 +842,14 @@ private fun PagerNode(n: JSONObject, ctx: SduiCtx, scope: Scope, extra: Modifier
     }
 }
 
+@Suppress("UNUSED_PARAMETER")
 @Composable
-private fun IndicatorNode(n: JSONObject, ctx: SduiCtx, scope: Scope, extra: Modifier) {
+private fun IndicatorNode(n: JSONObject, ctx: SduiCtx, scope: Scope, modifier: Modifier) {
     val st = ctx.pagerStates[n.optString("for")] ?: return
     val primary = ctx.colorString("@token/primary") ?: Color.Blue
     val border = ctx.colorString("@token/border") ?: Color.Gray
     Row(
-        n.base(extra, true).padding(n.insetsOf("paddingDp")),
+        modifier.base(n, fillWidth = true).padding(n.insetsOf("paddingDp")),
         horizontalArrangement = Arrangement.Center
     ) {
         for (i in 0 until st.pageCount) {

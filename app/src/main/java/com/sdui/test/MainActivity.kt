@@ -34,45 +34,75 @@ private sealed interface UiState {
     object Loading : UiState
     data class Error(val message: String) : UiState
     data class Ready(val screen: JSONObject) : UiState
+    data class Html(val html: String) : UiState
 }
+
+// JSON me "html" key ho to wo inline HTML screen hai
+private fun toState(j: JSONObject): UiState =
+    if (j.has("html")) UiState.Html(j.optString("html")) else UiState.Ready(j)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SduiApp() {
     val context = LocalContext.current
-    val stack = remember { mutableStateListOf("homepage") }
+    val stack = remember { mutableStateListOf("page.html") }
     var reloadKey by remember { mutableIntStateOf(0) }
     var state by remember { mutableStateOf<UiState>(UiState.Loading) }
     val current = stack.last()
 
     LaunchedEffect(current, reloadKey) {
-        val cached = ServerConfig.loadCached(context, current)
-        state = if (cached != null) UiState.Ready(cached) else UiState.Loading
+        val isHtml = current.endsWith(".html")
+        val cachedState: UiState? =
+            if (isHtml) ServerConfig.loadCachedText(context, "html:$current")?.let { UiState.Html(it) }
+            else ServerConfig.loadCached(context, current)?.let { toState(it) }
+        state = cachedState ?: UiState.Loading
         try {
-            val json = withContext(Dispatchers.IO) {
+            val fresh: UiState = withContext(Dispatchers.IO) {
                 val bust = reloadKey > 0
-                val j = ServerConfig.fetchScreen(current, bust)
-                // Naya schema (layout key) ho to "<screen>.mock.json" bhi merge karo
-                if (j.has("layout")) {
-                    val extra = runCatching { ServerConfig.fetchScreen("$current.mock", bust) }.getOrNull()
-                    if (extra != null) {
-                        val ks = extra.keys()
-                        while (ks.hasNext()) {
-                            val k = ks.next()
-                            j.put(k, extra.opt(k))
+                if (isHtml) {
+                    val t = ServerConfig.fetchText(current, bust)
+                    ServerConfig.saveCachedText(context, "html:$current", t)
+                    UiState.Html(t)
+                } else {
+                    val j = ServerConfig.fetchScreen(current, bust)
+                    // layout schema ho to "<screen>.mock.json" bhi merge karo
+                    if (j.has("layout")) {
+                        val extra = runCatching { ServerConfig.fetchScreen("$current.mock", bust) }.getOrNull()
+                        if (extra != null) {
+                            val ks = extra.keys()
+                            while (ks.hasNext()) {
+                                val k = ks.next()
+                                j.put(k, extra.opt(k))
+                            }
                         }
                     }
+                    ServerConfig.saveCache(context, current, j)
+                    toState(j)
                 }
-                j
             }
-            ServerConfig.saveCache(context, current, json)
-            state = UiState.Ready(json)
+            state = fresh
         } catch (e: Exception) {
-            if (cached == null) state = UiState.Error(e.message ?: "Unknown error")
+            if (cachedState == null) state = UiState.Error(e.message ?: "Unknown error")
         }
     }
 
     BackHandler(enabled = stack.size > 1) { stack.removeAt(stack.lastIndex) }
+
+    // ---- HTML screen (native HTML engine) ----
+    val onHtmlAction: (String, String) -> Unit = { type, arg ->
+        when (type) {
+            "toast" -> Toast.makeText(context, arg, Toast.LENGTH_SHORT).show()
+            "url" -> runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(arg))) }
+            "dial" -> runCatching { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$arg"))) }
+            "screen" -> stack.add(arg)
+            "back" -> if (stack.size > 1) stack.removeAt(stack.lastIndex)
+        }
+    }
+    val cur = state
+    if (cur is UiState.Html) {
+        HtmlScreen(html = cur.html, onAction = onHtmlAction, onReload = { reloadKey++ })
+        return
+    }
 
     // ---- Naya engine (layout/templates schema) ----
     val ready = state as? UiState.Ready
@@ -106,6 +136,7 @@ fun SduiApp() {
     ) { padding ->
         Box(Modifier.padding(padding).fillMaxSize()) {
             when (val s = state) {
+                is UiState.Html -> { /* upar already render ho chuka */ }
                 is UiState.Loading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
                 is UiState.Error -> Column(
                     Modifier.align(Alignment.Center).padding(24.dp),
